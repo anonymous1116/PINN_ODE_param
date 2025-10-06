@@ -190,3 +190,7 @@ for s in range(100):
                                             axis=0))
     trajectory[s, :, :] = estimate_funcs
     print(f"Simulation {s} finished")
+np.save("trajectory_RMSE.npy", trajectory_RMSE)
+np.save("a_simulation.npy", a_simulation)
+np.save("b_simulation.npy", b_simulation)
+np.save("c_simulation.npy", c_simulation)
