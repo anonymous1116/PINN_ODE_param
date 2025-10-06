@@ -5,7 +5,7 @@
 #SBATCH --account=statdept
 #SBATCH --gpus-per-node=1
 #SBATCH --mem=160G
-#SBATCH --qos=standby
+#SBATCH --qos=normal
 #SBATCH --partition=v100
 #SBATCH --output=output_log_training/output_log_%A_%a.out
 #SBATCH --error=output_log_training/error_log_%A_%a.txt
