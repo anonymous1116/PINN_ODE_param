@@ -101,96 +101,100 @@ def fOdeDtheta(theta, x, tvec):
     return resultDtheta
 
 
-true_theta = [0.2, 0.2, 3]
-true_x0 = [-1, 1]
-true_sigma = [0.2, 0.2]
-n = 41
-tvecObs = np.linspace(0, 20, num=n)
-sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
-                t_span=[0, tvecObs[-1]], y0=true_x0, t_eval=tvecObs, vectorized=True)
-ydataTruth = sol.y
-ydataTruth = np.array(ydataTruth).transpose()
+def main():
+    true_theta = [0.2, 0.2, 3]
+    true_x0 = [-1, 1]
+    true_sigma = [0.2, 0.2]
+    n = 41
+    tvecObs = np.linspace(0, 20, num=n)
+    sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
+                    t_span=[0, tvecObs[-1]], y0=true_x0, t_eval=tvecObs, vectorized=True)
+    ydataTruth = sol.y
+    ydataTruth = np.array(ydataTruth).transpose()
 
-tvecFull = np.linspace(0, 20, num=2001)
-solFull = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
-                    t_span=[0, tvecFull[-1]], y0=true_x0, t_eval=tvecFull, vectorized=True)
-ydataTruthFull = solFull.y
-ydataTruthFull = np.array(ydataTruthFull).transpose()
+    tvecFull = np.linspace(0, 20, num=2001)
+    solFull = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
+                        t_span=[0, tvecFull[-1]], y0=true_x0, t_eval=tvecFull, vectorized=True)
+    ydataTruthFull = solFull.y
+    ydataTruthFull = np.array(ydataTruthFull).transpose()
 
-a_simulation = np.zeros(100)
-b_simulation = np.zeros(100)
-c_simulation = np.zeros(100)
-trajectory_RMSE = np.zeros((100, 2))
-trajectory = np.zeros((100, 2001, 2))
-SEED = pd.read_table("FN_seed.txt", delim_whitespace=True, header=None)
-SEED = torch.tensor(data=SEED.values, dtype=torch.int)
-observed_ind = np.linspace(0, 1000, num=28-7, dtype=int)
-observed_ind = np.concatenate((observed_ind, np.array([1100, 1200, 1300, 1400, 1500, 1700, 2000])))
+    a_simulation = np.zeros(100)
+    b_simulation = np.zeros(100)
+    c_simulation = np.zeros(100)
+    trajectory_RMSE = np.zeros((100, 2))
+    trajectory = np.zeros((100, 2001, 2))
+    SEED = pd.read_table("FN_seed.txt", delim_whitespace=True, header=None)
+    SEED = torch.tensor(data=SEED.values, dtype=torch.int)
+    observed_ind = np.linspace(0, 1000, num=28-7, dtype=int)
+    observed_ind = np.concatenate((observed_ind, np.array([1100, 1200, 1300, 1400, 1500, 1700, 2000])))
 
-for s in range(100):
-    np.random.seed(SEED[s, 0].data)
-    torch.manual_seed(SEED[s, 0].data)
-    ydataV = ydataTruth[:, 0] + np.random.normal(0, true_sigma[0], ydataTruth[:, 0].size)
-    ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
-    ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
-    t = torch.linspace(0., 20., n)  # torch.float32
-    true_y = torch.from_numpy(ydata)  # torch.float64
-    t_min = 0.0
-    t_max = 20.0
-    variable_batch_size = 7
-    derivative_batch_size = 100
-    train_generator = SamplerGenerator(
-        Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
-    model = BaseSolver(diff_eqs=ODESystem(),
-                       net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                       net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
-    best_model = BaseSolver(diff_eqs=ODESystem(),
-                       net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                       net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
-    y_ind = np.arange(n)
-    train_epochs = 15000  # 10000
-    loss_history = []
-    for epoch in range(train_epochs):
-        np.random.shuffle(y_ind)
-        epoch_loss = 0.0
-        batch_loss = 0.0
-        # model.train()
-        optimizer.zero_grad()
-        for i in range(0, n, variable_batch_size):
-            variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
-            batch_loss = model.compute_loss(
-                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
-                batch_y=true_y[variable_batch_id],  # [7, 2]
-                derivative_weight=0.8)
-            batch_loss.backward()
-            epoch_loss += batch_loss.item()
-            # if i % 100 == 0:
-            #     print(f'Train Epoch: {epoch} '
-            #           f'[{i:05}/{n} '
-            #           f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
-        loss_history.append(epoch_loss)
-        if loss_history[-1] == min(loss_history):
-            best_model.load_state_dict(model.state_dict())
-    # check estimated parameters
-    a_simulation[s] = best_model.diff_eqs.a.data
-    b_simulation[s] = best_model.diff_eqs.b.data
-    c_simulation[s] = best_model.diff_eqs.c.data
+    for s in range(100):
+        np.random.seed(SEED[s, 0].data)
+        torch.manual_seed(SEED[s, 0].data)
+        ydataV = ydataTruth[:, 0] + np.random.normal(0, true_sigma[0], ydataTruth[:, 0].size)
+        ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
+        ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
+        t = torch.linspace(0., 20., n)  # torch.float32
+        true_y = torch.from_numpy(ydata)  # torch.float64
+        t_min = 0.0
+        t_max = 20.0
+        variable_batch_size = 7
+        derivative_batch_size = 100
+        train_generator = SamplerGenerator(
+            Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
+        model = BaseSolver(diff_eqs=ODESystem(),
+                        net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
+                        net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
+        best_model = BaseSolver(diff_eqs=ODESystem(),
+                        net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
+                        net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
+        optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
+        y_ind = np.arange(n)
+        train_epochs = 15000  # 10000
+        loss_history = []
+        for epoch in range(train_epochs):
+            np.random.shuffle(y_ind)
+            epoch_loss = 0.0
+            batch_loss = 0.0
+            # model.train()
+            optimizer.zero_grad()
+            for i in range(0, n, variable_batch_size):
+                variable_batch_id = y_ind[i:(i + variable_batch_size)]
+                # optimizer.zero_grad()
+                batch_loss = model.compute_loss(
+                    derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
+                    variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
+                    batch_y=true_y[variable_batch_id],  # [7, 2]
+                    derivative_weight=0.8)
+                batch_loss.backward()
+                epoch_loss += batch_loss.item()
+                # if i % 100 == 0:
+                #     print(f'Train Epoch: {epoch} '
+                #           f'[{i:05}/{n} '
+                #           f'\tLoss: {batch_loss.item():.6f}')
+            optimizer.step()
+            loss_history.append(epoch_loss)
+            if loss_history[-1] == min(loss_history):
+                best_model.load_state_dict(model.state_dict())
+        # check estimated parameters
+        a_simulation[s] = best_model.diff_eqs.a.data
+        b_simulation[s] = best_model.diff_eqs.b.data
+        c_simulation[s] = best_model.diff_eqs.c.data
 
-    # check estimated path
-    with torch.no_grad():
-        estimate_t = torch.linspace(0., 20., 2001)
-        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
-        estimate_funcs = torch.cat(estimate_funcs, dim=1)
-    estimate_funcs = estimate_funcs.numpy()
-    trajectory_RMSE[s, :] = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
-                                            axis=0))
-    trajectory[s, :, :] = estimate_funcs
-    print(f"Simulation {s} finished")
-np.save("trajectory_RMSE.npy", trajectory_RMSE)
-np.save("a_simulation.npy", a_simulation)
-np.save("b_simulation.npy", b_simulation)
-np.save("c_simulation.npy", c_simulation)
+        # check estimated path
+        with torch.no_grad():
+            estimate_t = torch.linspace(0., 20., 2001)
+            estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
+            estimate_funcs = torch.cat(estimate_funcs, dim=1)
+        estimate_funcs = estimate_funcs.numpy()
+        trajectory_RMSE[s, :] = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
+                                                axis=0))
+        trajectory[s, :, :] = estimate_funcs
+        print(f"Simulation {s} finished")
+    np.save("trajectory_RMSE.npy", trajectory_RMSE)
+    np.save("a_simulation.npy", a_simulation)
+    np.save("b_simulation.npy", b_simulation)
+    np.save("c_simulation.npy", c_simulation)
+
+if __name__ == "__main__":
+    main()
