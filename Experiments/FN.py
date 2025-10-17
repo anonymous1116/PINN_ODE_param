@@ -168,10 +168,10 @@ def main():
                     derivative_weight=0.8)
                 batch_loss.backward()
                 epoch_loss += batch_loss.item()
-                # if i % 100 == 0:
-                #     print(f'Train Epoch: {epoch} '
-                #           f'[{i:05}/{n} '
-                #           f'\tLoss: {batch_loss.item():.6f}')
+                if i % 100 == 0:
+                    print(f'Train Epoch: {epoch} '
+                        f'[{i:05}/{n} '
+                        f'\tLoss: {batch_loss.item():.6f}')
             optimizer.step()
             loss_history.append(epoch_loss)
             if loss_history[-1] == min(loss_history):
