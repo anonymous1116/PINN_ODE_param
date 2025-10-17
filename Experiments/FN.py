@@ -123,7 +123,7 @@ def main():
     c_simulation = np.zeros(100)
     trajectory_RMSE = np.zeros((100, 2))
     trajectory = np.zeros((100, 2001, 2))
-    SEED = pd.read_table("./Experiment/FN_seed.txt", delim_whitespace=True, header=None)
+    SEED = pd.read_table("./Experiments/FN_seed.txt", delim_whitespace=True, header=None)
     SEED = torch.tensor(data=SEED.values, dtype=torch.int)
     observed_ind = np.linspace(0, 1000, num=28-7, dtype=int)
     observed_ind = np.concatenate((observed_ind, np.array([1100, 1200, 1300, 1400, 1500, 1700, 2000])))
