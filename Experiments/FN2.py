@@ -211,7 +211,8 @@ def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
     parser.add_argument("--seed", type = int, default = 1,
                         help = "See number (default: 1)")
-    
+    return parser.parse_args()
+
 if __name__ == "__main__":
     args = get_args()
     main(args)
