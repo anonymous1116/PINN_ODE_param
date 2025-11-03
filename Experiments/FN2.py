@@ -103,7 +103,7 @@ def fOdeDtheta(theta, x, tvec):
     return resultDtheta
 
 
-def main():
+def main(args):
     true_theta = [0.2, 0.2, 3]
     true_x0 = [-1, 1]
     true_sigma = [0.2, 0.2]
