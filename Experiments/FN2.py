@@ -138,7 +138,6 @@ def main(args):
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
-    print(ydata)
     
     np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
     if s == 1:
