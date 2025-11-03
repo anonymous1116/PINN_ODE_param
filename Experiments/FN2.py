@@ -145,7 +145,7 @@ def main():
         np.save(ydataTruthFull, f"{output_dir}/ydata/ydataTruthFull.npy")
         np.save(ydataTruth, f"{output_dir}/ydata/ydataTruth.npy")
         np.save(observed_ind, f"{output_dir}/ydata/observed_ind.npy")
-        
+        print("ydataTruthFull, ydataTruth, observed_ind saved", flush=True)    
     
     t = torch.linspace(0., 20., n)  # torch.float32
     true_y = torch.from_numpy(ydata)  # torch.float64
