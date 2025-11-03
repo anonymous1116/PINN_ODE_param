@@ -135,7 +135,7 @@ def main(args):
     ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
 
 
-    output_dir = f"./depot_hyun/hyun/ODE_param/FN"
+    output_dir = f"../depot_hyun/hyun/ODE_param/FN"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
