@@ -140,11 +140,11 @@ def main(args):
     
     print(ydata)
     
-    np.save(ydata, f"{output_dir}/ydata/ydata_{s}.npy")
+    np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
     if s == 1:
-        np.save(ydataTruthFull, f"{output_dir}/ydata/ydataTruthFull.npy")
-        np.save(ydataTruth, f"{output_dir}/ydata/ydataTruth.npy")
-        np.save(observed_ind, f"{output_dir}/ydata/observed_ind.npy")
+        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull)
+        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth)
+        np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind)
         print("ydataTruthFull, ydataTruth, observed_ind saved", flush=True)    
     
     t = torch.linspace(0., 20., n)  # torch.float32
