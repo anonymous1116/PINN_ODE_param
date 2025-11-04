@@ -4,6 +4,7 @@ import torch.nn as nn
 import pandas as pd
 import argparse
 import os
+import time
 from abc import ABC
 from scipy.integrate import solve_ivp
 from solvers_utils import PretrainedSolver
