@@ -29,4 +29,5 @@ seed=$((SLURM_ARRAY_TASK_ID + 1))
 #python ./Experiments/FN.py 
 #python ./benchmark/benchmark_training.py --num_training 100000 --seed 1 --task "cont_table" --N_EPOCHS 1 --layer_len 256 
 
-python ./Experiments/FN2.py --seed $seed
+#python ./Experiments/FN2.py --seed $seed
+python ./Experiments/FN2.py --seed 1

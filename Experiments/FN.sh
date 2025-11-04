@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:05:00
+#SBATCH --time=00:10:00
 #SBATCH --account=statdept
 #SBATCH --gpus-per-node=1
 #SBATCH --mem=160G
-#SBATCH --qos=standby
+#SBATCH --qos=normal
 #SBATCH --array=0-99
-#SBATCH --partition=a10
+#SBATCH --partition=v100
 #SBATCH --output=output_log_training/output_log_%A_%a.out
 #SBATCH --error=output_log_training/error_log_%A_%a.txt
 
