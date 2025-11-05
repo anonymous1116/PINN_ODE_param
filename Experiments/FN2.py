@@ -202,7 +202,7 @@ def main(args):
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
                                             axis=0))
     print(f"Simulation {s} finished")
-    np.save(f"trajectory_RMSE_{s}.npy", trajectory_RMSE)
+    np.save(f"{output_dir}/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
     
