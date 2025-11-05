@@ -164,7 +164,7 @@ def main(args):
                     net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
     y_ind = np.arange(n)
-    train_epochs = 10000  # 10000
+    train_epochs = 15000  # 10000
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
