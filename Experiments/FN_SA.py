@@ -115,19 +115,21 @@ class ODESystem(nn.Module):
         return [diff(V, t) - self.c * (V - V ** 3 / 3 + R), diff(R, t) + (V - self.a + self.b * R) / self.c]
 
     def compute_func_val(self, shared_net, batch_t):
-        # batch_t: list of tensors, e.g. [t] with shape [B, 1]
         t = torch.cat(batch_t, dim=1)  # [B, 1]
 
         out = shared_net(t)            # [B, 2]
 
-        # learnable initial conditions
-        init = torch.stack([self.V0, self.R0]).to(out.device)  # [2]
-        init = init.unsqueeze(0)                               # [1, 2]
+        init = torch.stack([self.V0, self.R0]).to(out.device).unsqueeze(0)
 
-        phi = 1 - torch.exp(-t)        # [B, 1], will broadcast to [B, 2]
-        new_out = init + phi * out     # [B, 2]
+        phi = 1 - torch.exp(-t)
 
-        return new_out
+        new_out = init + phi * out
+
+        # return two tensors
+        V = new_out[:, 0:1]
+        R = new_out[:, 1:2]
+
+        return [V, R]
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
     def __init__(self, diff_eqs, shared_net):
