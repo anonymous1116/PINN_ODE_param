@@ -259,16 +259,27 @@ def main(args):
     loss_history = []
     best_loss = float('inf')
     for epoch in range(train_epochs):
+
+        # ---- 1) Shuffle data indices ----
         y_ind = np.random.permutation(n)
-        derivative_batch_t = [s.reshape(-1, 1) for s in train_generator.get_examples()]
+
+        # ---- 2) Sample derivative batch once per epoch ----
+        derivative_batch_t = [
+            s.reshape(-1, 1) for s in train_generator.get_examples()
+        ]  # e.g. list([100,1])
+
         epoch_loss = 0.0
+
         model.train()
 
+        # ---- 3) Loop through variable data in mini-batches ----
         for i in range(0, n, variable_batch_size):
+
             variable_batch_id = y_ind[i: i + variable_batch_size]
             variable_batch_t = [t[variable_batch_id].view(-1, 1)]
             batch_y = true_y[variable_batch_id]
 
+            # ---- forward + backward ----
             optimizer.zero_grad()
             batch_loss = model.compute_loss(
                 derivative_batch_t=derivative_batch_t,
@@ -281,10 +292,21 @@ def main(args):
 
             epoch_loss += batch_loss.item()
 
+        loss_history.append(epoch_loss)
 
+        # ---- 4) Save best model ----
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            best_model = copy.deepcopy(model)
+
+        # optional: print
+        if epoch % 100 == 0:
+            print(f"Epoch {epoch} | Loss = {epoch_loss:.6f}")
+        
     
     # check estimated parameters
-    param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
+    with torch.no_grad():
+        param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
 
     # check estimated path
     with torch.no_grad():
