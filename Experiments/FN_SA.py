@@ -135,27 +135,27 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         # --------------------------
         # 1. Derivative loss
         # --------------------------
-        funcs = self.diff_eqs.compute_func_val(self.shared_net, derivative_batch_t)
-        V_pred = funcs[:, 0:1]
-        R_pred = funcs[:, 1:2]
-        t_pred = torch.cat(derivative_batch_t, dim=1)
-
-        dVdt = diff(V_pred, t_pred)
-        dRdt = diff(R_pred, t_pred)
-
-        res1 = dVdt - self.diff_eqs.c * (V_pred - V_pred**3 / 3 + R_pred)
-        res2 = dRdt + (V_pred - self.diff_eqs.a + self.diff_eqs.b * R_pred) / self.diff_eqs.c
-
-        derivative_loss = (torch.cat([res1, res2], dim=1)**2).mean()
-
+        derivative_loss = 0.0
+        derivative_funcs = self.diff_eqs.compute_func_val(self.nets, derivative_batch_t)
+        derivative_residuals = self.diff_eqs.compute_derivative(*derivative_funcs,
+                                                                *derivative_batch_t)
+        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
+        derivative_loss += (derivative_residuals ** 2).mean()
+        
         # --------------------------
         # 2. Variable loss (data fit)
         # --------------------------
-        funcs_var = self.diff_eqs.compute_func_val(self.shared_net, variable_batch_t)
-        variable_loss = ((funcs_var - batch_y)**2).mean()
-
+        """(variable_batch_t, batch_y) is sampled from data
+         variable_batch_t =list([variable_batch_size, 1])
+        batch_y.shape = [variable_batch_size, 1]
+        """
+        variable_loss = 0.0
+        variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
+        variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
+        variable_loss += ((variable_funcs - batch_y) ** 2).mean()
         return derivative_weight * derivative_loss + variable_loss
 
+        
 
 
 # 100 simulations
