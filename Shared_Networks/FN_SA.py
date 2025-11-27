@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
 from Experiments.networks import SinActv
 from Experiments.solvers_utils import PretrainedSolver
 from Experiments.generators import SamplerGenerator, Generator1D
-from Experiments.neurodiffeq import safe_diff as diff
+from neurodiffeq import safe_diff as diff
 
 
 class SharedFCNN(nn.Module):
