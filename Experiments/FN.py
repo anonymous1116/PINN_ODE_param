@@ -18,8 +18,6 @@ class ODESystem(nn.Module):
         self.c = nn.Parameter(torch.tensor(0.5))
         self.V0 = nn.Parameter(torch.tensor(-1.))
         self.R0 = nn.Parameter(torch.tensor(1.))
-        # self.V0 = torch.tensor(-1.)
-        # self.R0 = torch.tensor(1.)
         self.initial_conditions = [self.V0, self.R0]
 
     def compute_derivative(self, V, R, t):
@@ -37,7 +35,6 @@ class ODESystem(nn.Module):
             new_network_output = u_0 + (1 - torch.exp(-torch.cat(derivative_batch_t, dim=1) + t_0)) * network_output
             rslt.append(new_network_output)
         return rslt
-
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
     def __init__(self, diff_eqs, net1, net2):
@@ -68,7 +65,6 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         variable_loss += ((variable_funcs - batch_y) ** 2).mean()
         return derivative_weight * derivative_loss + variable_loss
 
-
 # 100 simulations
 def fOde(theta, x, tvec):
     V = x[:, 0]
@@ -77,7 +73,6 @@ def fOde(theta, x, tvec):
     Rdt = -1.0/theta[2] * ( V - theta[0] + theta[1] * R)
     result = np.stack([Vdt, Rdt], axis=1)
     return result
-
 
 def fOdeDx(theta, x, tvec):
     resultDx = np.zeros(shape=[np.shape(x)[0], np.shape(x)[1], np.shape(x)[1]])
@@ -88,7 +83,6 @@ def fOdeDx(theta, x, tvec):
     resultDx[:, 0, 1] = -1.0 / theta[2]
     resultDx[:, 1, 1] = -1.0*theta[1]/theta[2]
     return resultDx
-
 
 def fOdeDtheta(theta, x, tvec):
     resultDtheta = np.zeros(shape=[np.shape(x)[0], np.shape(theta)[0], np.shape(x)[1]])

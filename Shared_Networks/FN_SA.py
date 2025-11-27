@@ -3,14 +3,35 @@ import torch
 import torch.nn as nn
 import pandas as pd
 import argparse
-import os
+import os,sys
 import time
 from abc import ABC
+
 from scipy.integrate import solve_ivp
-from solvers_utils import PretrainedSolver
-from networks import FCNN, SinActv
-from generators import SamplerGenerator, Generator1D
-from neurodiffeq import safe_diff as diff
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
+from Experiments.networks import SinActv
+from Experiments.solvers_utils import PretrainedSolver
+from Experiments.generators import SamplerGenerator, Generator1D
+from Experiments.neurodiffeq import safe_diff as diff
+
+
+class SharedFCNN(nn.Module):
+    def __init__(self, n_input_units=1, n_output_units=2, hidden_units=[64, 64], actv=nn.Tanh):
+        super().__init__()
+
+        layers = []
+        prev_units = n_input_units
+        for h in hidden_units:
+            layers.append(nn.Linear(prev_units, h))
+            layers.append(actv())
+            prev_units = h
+
+        layers.append(nn.Linear(prev_units, n_output_units))
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, t):
+        return self.net(t)   # output shape: [batch, 2]
 
 
 class ODESystem(nn.Module):
@@ -21,55 +42,54 @@ class ODESystem(nn.Module):
         self.c = nn.Parameter(torch.tensor(0.5))
         self.V0 = nn.Parameter(torch.tensor(-1.))
         self.R0 = nn.Parameter(torch.tensor(1.))
-        # self.V0 = torch.tensor(-1.)
-        # self.R0 = torch.tensor(1.)
-        self.initial_conditions = [self.V0, self.R0]
+        self.initial_conditions = torch.tensor([-1., 1.])  # (V0, R0)
 
-    def compute_derivative(self, V, R, t):
-        """v.shape = [batch, 1]
-        t.shape = [batch, 1]
-        """
-        return [diff(V, t) - self.c * (V - V ** 3 / 3 + R), diff(R, t) + (V - self.a + self.b * R) / self.c]
+    def compute_func_val(self, shared_net, derivative_batch_t):
+        # derivative_batch_t = list([tensor(batch,1)]) --> concatenate
+        t = torch.cat(derivative_batch_t, dim=1)
 
-    def compute_func_val(self, nets, derivative_batch_t):
-        t_0 = 0.0
-        rslt = []
-        for idx, net in enumerate(nets):
-            u_0 = self.initial_conditions[idx]
-            network_output = net(torch.cat(derivative_batch_t, dim=1))
-            new_network_output = u_0 + (1 - torch.exp(-torch.cat(derivative_batch_t, dim=1) + t_0)) * network_output
-            rslt.append(new_network_output)
-        return rslt
+        # shared prediction: [batch, 2]
+        out = shared_net(t)
 
+        # apply your residual modification
+        # initial offset V0, R0 added via broadcasting
+        new_out = self.initial_conditions + (1 - torch.exp(-(t - 0.0))) * out
+        # new_out shape = [batch, 2]
+        return new_out   # returns tensor
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
-    def __init__(self, diff_eqs, net1, net2):
+    def __init__(self, diff_eqs, shared_net):
         super().__init__()
         self.diff_eqs = diff_eqs
-        self.net1 = net1
-        self.net2 = net2
-        self.nets = [net1, net2]
+        self.shared_net = shared_net
 
-    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5):
-        """derivative_batch_t can be sampled in any distribution and sample size.
-        derivative_batch_t= list([derivative_batch_size, 1])
-        """
-        derivative_loss = 0.0
-        derivative_funcs = self.diff_eqs.compute_func_val(self.nets, derivative_batch_t)
-        derivative_residuals = self.diff_eqs.compute_derivative(*derivative_funcs,
-                                                                *derivative_batch_t)
-        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
-        derivative_loss += (derivative_residuals ** 2).mean()
+    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y,
+                     derivative_weight=0.5):
 
-        """(variable_batch_t, batch_y) is sampled from data
-         variable_batch_t =list([variable_batch_size, 1])
-        batch_y.shape = [variable_batch_size, 1]
-        """
-        variable_loss = 0.0
-        variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
-        variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
-        variable_loss += ((variable_funcs - batch_y) ** 2).mean()
+        # --------------------------
+        # 1. Derivative loss
+        # --------------------------
+        funcs = self.diff_eqs.compute_func_val(self.shared_net, derivative_batch_t)
+        V_pred = funcs[:, 0:1]
+        R_pred = funcs[:, 1:2]
+        t_pred = torch.cat(derivative_batch_t, dim=1)
+
+        dVdt = diff(V_pred, t_pred)
+        dRdt = diff(R_pred, t_pred)
+
+        res1 = dVdt - self.diff_eqs.c * (V_pred - V_pred**3 / 3 + R_pred)
+        res2 = dRdt + (V_pred - self.diff_eqs.a + self.diff_eqs.b * R_pred) / self.diff_eqs.c
+
+        derivative_loss = (torch.cat([res1, res2], dim=1)**2).mean()
+
+        # --------------------------
+        # 2. Variable loss (data fit)
+        # --------------------------
+        funcs_var = self.diff_eqs.compute_func_val(self.shared_net, variable_batch_t)
+        variable_loss = ((funcs_var - batch_y)**2).mean()
+
         return derivative_weight * derivative_loss + variable_loss
+
 
 
 # 100 simulations
@@ -136,7 +156,7 @@ def main(args):
     ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
     ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
 
-    output_dir = f"../depot_hyun/hyun/ODE_param/FN"
+    output_dir = f"../depot_hyun/hyun/ODE_param/FN_SA"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
@@ -156,12 +176,26 @@ def main(args):
     derivative_batch_size = 100
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
-    model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
-    best_model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
+    model = BaseSolver(
+    diff_eqs = ODESystem(),
+    shared_net = SharedFCNN(
+        n_input_units=1,
+        n_output_units=2,
+        hidden_units=[64, 64],
+        actv=SinActv
+    )
+    )
+    best_model = BaseSolver(
+    diff_eqs = ODESystem(),
+    shared_net = SharedFCNN(
+        n_input_units=1,
+        n_output_units=2,
+        hidden_units=[64, 64],
+        actv=SinActv
+    )
+    )
+    
+    
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
