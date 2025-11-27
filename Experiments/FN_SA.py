@@ -12,6 +12,73 @@ from networks import SinActv
 from solvers_utils import PretrainedSolver
 from generators import SamplerGenerator, Generator1D
 from neurodiffeq import safe_diff as diff
+from warnings import warn
+
+
+
+class FCNN(nn.Module):
+    """A fully connected neural network.
+    :param n_input_units: Number of units in the input layer, defaults to 1.
+    :type n_input_units: int
+    :param n_output_units: Number of units in the output layer, defaults to 1.
+    :type n_output_units: int
+    :param n_hidden_units: [DEPRECATED] Number of hidden units in each layer
+    :type n_hidden_units: int
+    :param n_hidden_layers: [DEPRECATED] Number of hidden mappsings (1 larger than the actual number of hidden layers)
+    :type n_hidden_layers: int
+    :param actv: The activation layer constructor after each hidden layer, defaults to `torch.nn.Tanh`.
+    :type actv: class
+    :param hidden_units: Number of hidden units in each hidden layer. Defaults to (32, 32).
+    :type hidden_units: Tuple[int]
+    .. note::
+        The arguments "n_hidden_units" and "n_hidden_layers" are deprecated in favor of "hidden_units".
+    """
+
+    def __init__(self, n_input_units=1, n_output_units=1, n_hidden_units=None, n_hidden_layers=None,
+                 actv=nn.Tanh, hidden_units=None):
+        r"""Initializer method.
+        """
+        super(FCNN, self).__init__()
+
+        # FORWARD COMPATIBILITY
+        # If only one of {n_hidden_unit, n_hidden_layers} is specified, fill-in the other one
+        if n_hidden_units is None and n_hidden_layers is not None:
+            n_hidden_units = 32
+        elif n_hidden_units is not None and n_hidden_layers is None:
+            n_hidden_layers = 1
+
+        # FORWARD COMPATIBILITY
+        # When {n_hidden_unit, n_hidden_layers} are specified, construct an equivalent hidden_units if None is provided
+        if n_hidden_units is not None or n_hidden_layers is not None:
+            if hidden_units is None:
+                hidden_units = tuple(n_hidden_units for _ in range(n_hidden_layers + 1))
+                warn(f"`n_hidden_units` and `n_hidden_layers` are deprecated, "
+                     f"pass `hidden_units={hidden_units}` instead",
+                     FutureWarning)
+            else:
+                warn(f"Ignoring `n_hidden_units` and `n_hidden_layers` in favor of `hidden_units={hidden_units}`",
+                     FutureWarning)
+
+        # If none of {n_hidden_units, n_hidden_layers, hidden_layers} are specified, use (32, 32) by default
+        if hidden_units is None:
+            hidden_units = (32, 32)
+
+        # If user passed in a list, iterator, etc., convert it to tuple
+        if not isinstance(hidden_units, tuple):
+            hidden_units = tuple(hidden_units)
+
+        units = (n_input_units,) + hidden_units
+        layers = []
+        for i in range(len(units) - 1):
+            layers.append(nn.Linear(units[i], units[i + 1]))
+            layers.append(actv())
+        # There's not activation in after the last layer
+        layers.append(nn.Linear(units[-1], n_output_units))
+        self.NN = torch.nn.Sequential(*layers)
+
+    def forward(self, t):
+        x = self.NN(t)
+        return x
 
 
 class SharedFCNN(nn.Module):
@@ -40,20 +107,21 @@ class ODESystem(nn.Module):
         self.c = nn.Parameter(torch.tensor(0.5))
         self.V0 = nn.Parameter(torch.tensor(-1.))
         self.R0 = nn.Parameter(torch.tensor(1.))
-        self.initial_conditions = torch.tensor([-1., 1.])  # (V0, R0)
 
-    def compute_func_val(self, shared_net, derivative_batch_t):
-        # derivative_batch_t = list([tensor(batch,1)]) --> concatenate
-        t = torch.cat(derivative_batch_t, dim=1)
+    def compute_func_val(self, shared_net, batch_t):
+        # batch_t: list of tensors, e.g. [t] with shape [B, 1]
+        t = torch.cat(batch_t, dim=1)  # [B, 1]
 
-        # shared prediction: [batch, 2]
-        out = shared_net(t)
+        out = shared_net(t)            # [B, 2]
 
-        # apply your residual modification
-        # initial offset V0, R0 added via broadcasting
-        new_out = self.initial_conditions + (1 - torch.exp(-(t - 0.0))) * out
-        # new_out shape = [batch, 2]
-        return new_out   # returns tensor
+        # learnable initial conditions
+        init = torch.stack([self.V0, self.R0]).to(out.device)  # [2]
+        init = init.unsqueeze(0)                               # [1, 2]
+
+        phi = 1 - torch.exp(-t)        # [B, 1], will broadcast to [B, 2]
+        new_out = init + phi * out     # [B, 2]
+
+        return new_out
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
     def __init__(self, diff_eqs, shared_net):
@@ -191,27 +259,16 @@ def main(args):
     loss_history = []
     best_loss = float('inf')
     for epoch in range(train_epochs):
-
-        # ---- 1) Shuffle data indices ----
         y_ind = np.random.permutation(n)
-
-        # ---- 2) Sample derivative batch once per epoch ----
-        derivative_batch_t = [
-            s.reshape(-1, 1) for s in train_generator.get_examples()
-        ]  # e.g. list([100,1])
-
+        derivative_batch_t = [s.reshape(-1, 1) for s in train_generator.get_examples()]
         epoch_loss = 0.0
-
         model.train()
 
-        # ---- 3) Loop through variable data in mini-batches ----
         for i in range(0, n, variable_batch_size):
-
             variable_batch_id = y_ind[i: i + variable_batch_size]
             variable_batch_t = [t[variable_batch_id].view(-1, 1)]
             batch_y = true_y[variable_batch_id]
 
-            # ---- forward + backward ----
             optimizer.zero_grad()
             batch_loss = model.compute_loss(
                 derivative_batch_t=derivative_batch_t,
@@ -224,17 +281,7 @@ def main(args):
 
             epoch_loss += batch_loss.item()
 
-        loss_history.append(epoch_loss)
 
-        # ---- 4) Save best model ----
-        if epoch_loss < best_loss:
-            best_loss = epoch_loss
-            best_model = copy.deepcopy(model)
-
-        # optional: print
-        if epoch % 100 == 0:
-            print(f"Epoch {epoch} | Loss = {epoch_loss:.6f}")
-        
     
     # check estimated parameters
     param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
