@@ -6,7 +6,7 @@ import argparse
 import os,sys
 import time
 from abc import ABC
-
+import copy
 from scipy.integrate import solve_ivp
 from networks import SinActv
 from solvers_utils import PretrainedSolver
@@ -183,45 +183,59 @@ def main(args):
         actv=SinActv
     )
     )
-    best_model = BaseSolver(
-    diff_eqs = ODESystem(),
-    shared_net = SharedFCNN(
-        n_input_units=1,
-        n_output_units=2,
-        hidden_units=[64, 64],
-        actv=SinActv
-    )
-    )
-    
+    best_model = copy.deepcopy(model)  # initialize
     
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
     loss_history = []
+
     for epoch in range(train_epochs):
-        np.random.shuffle(y_ind)
+
+        # ---- 1) Shuffle data indices ----
+        y_ind = np.random.permutation(n)
+
+        # ---- 2) Sample derivative batch once per epoch ----
+        derivative_batch_t = [
+            s.reshape(-1, 1) for s in train_generator.get_examples()
+        ]  # e.g. list([100,1])
+
         epoch_loss = 0.0
-        batch_loss = 0.0
-        # model.train()
-        optimizer.zero_grad()
+
+        model.train()
+
+        # ---- 3) Loop through variable data in mini-batches ----
         for i in range(0, n, variable_batch_size):
-            variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
+
+            variable_batch_id = y_ind[i: i + variable_batch_size]
+            variable_batch_t = [t[variable_batch_id].view(-1, 1)]
+            batch_y = true_y[variable_batch_id]
+
+            # ---- forward + backward ----
+            optimizer.zero_grad()
             batch_loss = model.compute_loss(
-                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
-                batch_y=true_y[variable_batch_id],  # [7, 2]
-                derivative_weight=0.8)
+                derivative_batch_t=derivative_batch_t,
+                variable_batch_t=variable_batch_t,
+                batch_y=batch_y,
+                derivative_weight=0.8,
+            )
             batch_loss.backward()
+            optimizer.step()
+
             epoch_loss += batch_loss.item()
-            if i % 100 == 0:
-                print(f'Train Epoch: {epoch} '
-                    f'[{i:05}/{n} '
-                    f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
+
         loss_history.append(epoch_loss)
-        if loss_history[-1] == min(loss_history):
-            best_model.load_state_dict(model.state_dict())
+
+        # ---- 4) Save best model ----
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            best_model = copy.deepcopy(model)
+
+        # optional: print
+        if epoch % 100 == 0:
+            print(f"Epoch {epoch} | Loss = {epoch_loss:.6f}")
+        
+    
     # check estimated parameters
     param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
 
