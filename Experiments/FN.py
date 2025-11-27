@@ -13,57 +13,62 @@ from neurodiffeq import safe_diff as diff
 class ODESystem(nn.Module):
     def __init__(self):
         super().__init__()
+        # trainable model parameters
         self.a = nn.Parameter(torch.tensor(0.5))
         self.b = nn.Parameter(torch.tensor(0.5))
         self.c = nn.Parameter(torch.tensor(0.5))
-        self.V0 = nn.Parameter(torch.tensor(-1.))
-        self.R0 = nn.Parameter(torch.tensor(1.))
-        self.initial_conditions = [self.V0, self.R0]
+
+        # fixed initial conditions
+        self.V0 = torch.tensor(-1., dtype=torch.float32)
+        self.R0 = torch.tensor(1., dtype=torch.float32)
 
     def compute_derivative(self, V, R, t):
-        """v.shape = [batch, 1]
-        t.shape = [batch, 1]
-        """
-        return [diff(V, t) - self.c * (V - V ** 3 / 3 + R), diff(R, t) + (V - self.a + self.b * R) / self.c]
+        dVdt = diff(V, t) - self.c * (V - V**3 / 3 + R)
+        dRdt = diff(R, t) + (V - self.a + self.b * R) / self.c
+        return [dVdt, dRdt]
 
-    def compute_func_val(self, nets, derivative_batch_t):
+    def compute_func_val(self, net, t_list):
         t_0 = 0.0
-        rslt = []
-        for idx, net in enumerate(nets):
-            u_0 = self.initial_conditions[idx]
-            network_output = net(torch.cat(derivative_batch_t, dim=1))
-            new_network_output = u_0 + (1 - torch.exp(-torch.cat(derivative_batch_t, dim=1) + t_0)) * network_output
-            rslt.append(new_network_output)
-        return rslt
+        t = torch.cat(t_list, dim=1)
+
+        raw = net(t)    # [batch,2]
+        V_raw = raw[:, 0:1]
+        R_raw = raw[:, 1:2]
+
+        factor = 1 - torch.exp(-(t - t_0))
+
+        V = self.V0 + factor * V_raw
+        R = self.R0 + factor * R_raw
+
+        return [V, R]
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
-    def __init__(self, diff_eqs, net1, net2):
+    def __init__(self, diff_eqs, net):
         super().__init__()
         self.diff_eqs = diff_eqs
-        self.net1 = net1
-        self.net2 = net2
-        self.nets = [net1, net2]
+        self.net = net
 
     def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5):
-        """derivative_batch_t can be sampled in any distribution and sample size.
-        derivative_batch_t= list([derivative_batch_size, 1])
         """
-        derivative_loss = 0.0
-        derivative_funcs = self.diff_eqs.compute_func_val(self.nets, derivative_batch_t)
+        derivative_batch_t: list([derivative_batch_size, 1])
+        variable_batch_t:   list([variable_batch_size, 1])
+        batch_y:            [variable_batch_size, 2]
+        """
+
+        # ----- physics / derivative loss -----
+        derivative_funcs = self.diff_eqs.compute_func_val(self.net, derivative_batch_t)
         derivative_residuals = self.diff_eqs.compute_derivative(*derivative_funcs,
                                                                 *derivative_batch_t)
-        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
-        derivative_loss += (derivative_residuals ** 2).mean()
+        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [batch, 2]
+        derivative_loss = (derivative_residuals ** 2).mean()
 
-        """(variable_batch_t, batch_y) is sampled from data
-         variable_batch_t =list([variable_batch_size, 1])
-        batch_y.shape = [variable_batch_size, 1]
-        """
-        variable_loss = 0.0
-        variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
-        variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
-        variable_loss += ((variable_funcs - batch_y) ** 2).mean()
+        # ----- data / variable loss -----
+        variable_funcs = self.diff_eqs.compute_func_val(self.net, variable_batch_t)
+        variable_funcs = torch.cat(variable_funcs, dim=1)  # [batch, 2]
+        variable_loss = ((variable_funcs - batch_y) ** 2).mean()
+
         return derivative_weight * derivative_loss + variable_loss
+
 
 # 100 simulations
 def fOde(theta, x, tvec):

@@ -102,6 +102,7 @@ class SharedFCNN(nn.Module):
 class ODESystem(nn.Module):
     def __init__(self):
         super().__init__()
+        # parameters to estimate
         self.a = nn.Parameter(torch.tensor(0.5))
         self.b = nn.Parameter(torch.tensor(0.5))
         self.c = nn.Parameter(torch.tensor(0.5))
@@ -109,61 +110,60 @@ class ODESystem(nn.Module):
         self.R0 = nn.Parameter(torch.tensor(1.))
 
     def compute_derivative(self, V, R, t):
-        """v.shape = [batch, 1]
-        t.shape = [batch, 1]
+        """V, R, t: [batch, 1]"""
+        dVdt = diff(V, t) - self.c * (V - V ** 3 / 3 + R)
+        dRdt = diff(R, t) + (V - self.a + self.b * R) / self.c
+        return [dVdt, dRdt]
+
+    def compute_func_val(self, net, t_list):
         """
-        return [diff(V, t) - self.c * (V - V ** 3 / 3 + R), diff(R, t) + (V - self.a + self.b * R) / self.c]
+        net: shared network, R -> (V,R)
+        t_list: list([batch, 1]) as in your original code
+        returns: [V(t), R(t)], each [batch, 1]
+        """
+        t_0 = 0.0
+        t = torch.cat(t_list, dim=1)        # [batch, 1]
+        network_output = net(t)             # [batch, 2]
 
-    def compute_func_val(self, shared_net, batch_t):
-        t = torch.cat(batch_t, dim=1)  # [B, 1]
+        V_raw = network_output[:, 0:1]      # [batch, 1]
+        R_raw = network_output[:, 1:2]      # [batch, 1]
 
-        out = shared_net(t)            # [B, 2]
+        # same modulation as your original code
+        factor = (1 - torch.exp(-(t - t_0)))  # [batch, 1]
 
-        init = torch.stack([self.V0, self.R0]).to(out.device).unsqueeze(0)
-
-        phi = 1 - torch.exp(-t)
-
-        new_out = init + phi * out
-
-        # return two tensors
-        V = new_out[:, 0:1]
-        R = new_out[:, 1:2]
-
+        V = self.V0 + factor * V_raw
+        R = self.R0 + factor * R_raw
         return [V, R]
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
-    def __init__(self, diff_eqs, shared_net):
+    def __init__(self, diff_eqs, net):
         super().__init__()
         self.diff_eqs = diff_eqs
-        self.shared_net = shared_net
+        self.net = net
 
-    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y,
-                     derivative_weight=0.5):
+    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5):
+        """
+        derivative_batch_t: list([derivative_batch_size, 1])
+        variable_batch_t:   list([variable_batch_size, 1])
+        batch_y:            [variable_batch_size, 2]
+        """
 
-        # --------------------------
-        # 1. Derivative loss
-        # --------------------------
-        derivative_loss = 0.0
-        derivative_funcs = self.diff_eqs.compute_func_val(self.shared_net, derivative_batch_t)
+        # ----- physics / derivative loss -----
+        derivative_funcs = self.diff_eqs.compute_func_val(self.net, derivative_batch_t)
         derivative_residuals = self.diff_eqs.compute_derivative(*derivative_funcs,
                                                                 *derivative_batch_t)
-        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
-        derivative_loss += (derivative_residuals ** 2).mean()
-        
-        # --------------------------
-        # 2. Variable loss (data fit)
-        # --------------------------
-        """(variable_batch_t, batch_y) is sampled from data
-         variable_batch_t =list([variable_batch_size, 1])
-        batch_y.shape = [variable_batch_size, 1]
-        """
-        variable_loss = 0.0
-        variable_funcs = self.diff_eqs.compute_func_val(self.shared_net, variable_batch_t)
-        variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
-        variable_loss += ((variable_funcs - batch_y) ** 2).mean()
+        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [batch, 2]
+        derivative_loss = (derivative_residuals ** 2).mean()
+
+        # ----- data / variable loss -----
+        variable_funcs = self.diff_eqs.compute_func_val(self.net, variable_batch_t)
+        variable_funcs = torch.cat(variable_funcs, dim=1)  # [batch, 2]
+        variable_loss = ((variable_funcs - batch_y) ** 2).mean()
+
         return derivative_weight * derivative_loss + variable_loss
 
-        
+
+
 
 
 # 100 simulations
@@ -250,17 +250,26 @@ def main(args):
     derivative_batch_size = 100
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
-    model = BaseSolver(
-    diff_eqs = ODESystem(),
-    shared_net = SharedFCNN(
+    
+    shared_net = FCNN(
+    n_input_units=1,
+    n_output_units=2,          # <--- now outputs (V, R)
+    hidden_units=[64, 64],
+    actv=SinActv
+    )
+    ode_system = ODESystem()
+    model = BaseSolver(diff_eqs=ode_system, net=shared_net)
+
+    # clone for best_model
+    best_shared_net = FCNN(
         n_input_units=1,
         n_output_units=2,
         hidden_units=[64, 64],
         actv=SinActv
     )
-    )
-    best_model = copy.deepcopy(model)  # initialize
-    
+    best_ode_system = ODESystem()
+    best_model = BaseSolver(diff_eqs=best_ode_system, net=best_shared_net)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
@@ -319,7 +328,7 @@ def main(args):
     # check estimated path
     with torch.no_grad():
         estimate_t = torch.linspace(0., 20., 2001)
-        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.shared_net, [estimate_t.view(-1, 1)])
+        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.net, [estimate_t.view(-1, 1)])
         estimate_funcs = estimate_funcs.numpy()
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
                                             axis=0))
