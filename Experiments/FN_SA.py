@@ -108,6 +108,12 @@ class ODESystem(nn.Module):
         self.V0 = nn.Parameter(torch.tensor(-1.))
         self.R0 = nn.Parameter(torch.tensor(1.))
 
+    def compute_derivative(self, V, R, t):
+        """v.shape = [batch, 1]
+        t.shape = [batch, 1]
+        """
+        return [diff(V, t) - self.c * (V - V ** 3 / 3 + R), diff(R, t) + (V - self.a + self.b * R) / self.c]
+
     def compute_func_val(self, shared_net, batch_t):
         # batch_t: list of tensors, e.g. [t] with shape [B, 1]
         t = torch.cat(batch_t, dim=1)  # [B, 1]
