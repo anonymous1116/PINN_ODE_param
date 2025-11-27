@@ -228,7 +228,7 @@ def main(args):
     # check estimated path
     with torch.no_grad():
         estimate_t = torch.linspace(0., 20., 2001)
-        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.shared_net, [estimate_t])
+        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.shared_net, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
