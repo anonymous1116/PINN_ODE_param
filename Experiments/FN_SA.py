@@ -190,7 +190,6 @@ def main(args):
     train_epochs = 15000  # 10000
     loss_history = []
     best_loss = float('inf')
-    
     for epoch in range(train_epochs):
 
         # ---- 1) Shuffle data indices ----
