@@ -136,7 +136,7 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         # 1. Derivative loss
         # --------------------------
         derivative_loss = 0.0
-        derivative_funcs = self.diff_eqs.compute_func_val(self.nets, derivative_batch_t)
+        derivative_funcs = self.diff_eqs.compute_func_val(self.shared_net, derivative_batch_t)
         derivative_residuals = self.diff_eqs.compute_derivative(*derivative_funcs,
                                                                 *derivative_batch_t)
         derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
@@ -150,7 +150,7 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         batch_y.shape = [variable_batch_size, 1]
         """
         variable_loss = 0.0
-        variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
+        variable_funcs = self.diff_eqs.compute_func_val(self.shared_net, variable_batch_t)
         variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
         variable_loss += ((variable_funcs - batch_y) ** 2).mean()
         return derivative_weight * derivative_loss + variable_loss
