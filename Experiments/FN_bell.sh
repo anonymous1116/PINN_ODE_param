@@ -23,5 +23,5 @@ cd $SLURM_SUBMIT_DIR
 # Calculate seed and dim_out
 seed=$((SLURM_ARRAY_TASK_ID))
 
-python ./Experiments/FN_SA.py --seed $seed --true_sigma 1e-1
-python ./Experiments/FN2.py --seed $seed --true_sigma 1e-1
+python ./Experiments/FN_SA.py --seed $seed --true_sigma 1e-2
+python ./Experiments/FN2.py --seed $seed --true_sigma 1e-2
