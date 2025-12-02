@@ -108,7 +108,7 @@ def main(args):
     true_theta = [0.2, 0.2, 3]
     true_x0 = [-1, 1]
     true_sigma = [args.true_sigma, args.true_sigma]
-    sci_str = format(true_sigma, ".0e")
+    sci_str = format(args.true_sigma, ".0e")
     print(sci_str)
     n = 41
     tvecObs = np.linspace(0, 20, num=n)
