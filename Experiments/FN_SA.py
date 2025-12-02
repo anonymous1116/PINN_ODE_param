@@ -133,7 +133,11 @@ def fOdeDtheta(theta, x, tvec):
 def main(args):
     true_theta = [0.2, 0.2, 3]
     true_x0 = [-1, 1]
-    true_sigma = [0.2, 0.2]
+    true_sigma = [args.true_sigma, args.true_sigma]
+    sci_str = format(args.true_sigma, ".0e")
+    print(sci_str)
+    
+    
     n = 41
     tvecObs = np.linspace(0, 20, num=n)
     sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
@@ -162,7 +166,7 @@ def main(args):
     ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
     ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
 
-    output_dir = f"../depot_hyun/hyun/ODE_param/FN_SA"
+    output_dir = f"../depot_hyun/hyun/ODE_param/FN_SA_sig{sci_str}"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
@@ -258,6 +262,8 @@ def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
     parser.add_argument("--seed", type = int, default = 1,
                         help = "See number (default: 1)")
+    parser.add_argument("--true_sigma", type = float, default = 0.2,
+                        help = "observation errors (default: 0.2)")
     return parser.parse_args()
 
 if __name__ == "__main__":
