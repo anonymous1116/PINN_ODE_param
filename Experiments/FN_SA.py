@@ -308,6 +308,7 @@ def main(args):
     with torch.no_grad():
         estimate_t = torch.linspace(0., 20., 2001)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.net, [estimate_t.view(-1, 1)])
+        print(estimate_funcs)
         estimate_funcs = estimate_funcs.numpy()
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
                                             axis=0))
