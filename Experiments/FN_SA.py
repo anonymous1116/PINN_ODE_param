@@ -97,7 +97,6 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         return derivative_weight * derivative_loss + variable_loss
 
 
-
 # 100 simulations
 def fOde(theta, x, tvec):
     V = x[:, 0]
