@@ -289,7 +289,7 @@ def main(args):
                 derivative_weight=0.8)
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-            if i % 100 == 0:
+            if epoch % 100 == 0:
                 print(f'Train Epoch: {epoch} '
                     f'[{i:05}/{n} '
                     f'\tLoss: {batch_loss.item():.6f}')
