@@ -251,7 +251,7 @@ def main(args):
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     
-    shared_net = FCNN(
+    shared_net = SharedFCNN(
     n_input_units=1,
     n_output_units=2,          # <--- now outputs (V, R)
     hidden_units=[64, 64],
@@ -261,7 +261,7 @@ def main(args):
     model = BaseSolver(diff_eqs=ode_system, net=shared_net)
 
     # clone for best_model
-    best_shared_net = FCNN(
+    best_shared_net = SharedFCNN(
         n_input_units=1,
         n_output_units=2,
         hidden_units=[64, 64],
