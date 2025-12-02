@@ -24,4 +24,4 @@ cd $SLURM_SUBMIT_DIR
 seed=$((SLURM_ARRAY_TASK_ID))
 
 #python ./Experiments/FN_SA.py --seed $seed
-python ./Experiments/FN2.py --seed $seed
+python ./Experiments/FN2.py --seed $seed --true_sigma 2e-1
