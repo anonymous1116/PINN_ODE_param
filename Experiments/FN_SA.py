@@ -164,8 +164,6 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
 
 
 
-
-
 # 100 simulations
 def fOde(theta, x, tvec):
     V = x[:, 0]
@@ -272,7 +270,7 @@ def main(args):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
     y_ind = np.arange(n)
-    train_epochs = 15000  # 10000
+    train_epochs = 100  # 10000
     loss_history = []
     best_loss = float('inf')
     for epoch in range(train_epochs):
