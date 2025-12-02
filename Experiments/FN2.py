@@ -127,8 +127,6 @@ def main(args):
     SEED = torch.tensor(data=SEED.values, dtype=torch.int)
     
     observed_ind = np.linspace(0, 2000, num=41, dtype=int)
-    #observed_ind = np.concatenate((observed_ind, np.array([1100, 1200, 1300, 1400, 1500, 1700, 2000])))
-
 
     s = args.seed
 
@@ -165,6 +163,7 @@ def main(args):
                     net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
                     net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
+    
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
     loss_history = []
@@ -201,13 +200,15 @@ def main(args):
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
+    #trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
+    #                                        axis=0))
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
                                             axis=0))
+    
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-    
     
 
 def get_args():

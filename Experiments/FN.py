@@ -176,6 +176,7 @@ def main():
             loss_history.append(epoch_loss)
             if loss_history[-1] == min(loss_history):
                 best_model.load_state_dict(model.state_dict())
+                
         # check estimated parameters
         a_simulation[s] = best_model.diff_eqs.a.data
         b_simulation[s] = best_model.diff_eqs.b.data
