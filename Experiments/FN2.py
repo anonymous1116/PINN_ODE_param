@@ -138,7 +138,7 @@ def main(args):
     ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
     ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
 
-    output_dir = f"../depot_hyun/hyun/ODE_param/FN_{sci_str}"
+    output_dir = f"../depot_hyun/hyun/ODE_param/FN_sig{sci_str}"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
