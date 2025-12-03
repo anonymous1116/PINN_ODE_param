@@ -205,7 +205,7 @@ def main(args):
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
                                             axis=0))
     h1_error = h1_error_trajectory(estimate_t, estimate_funcs, ydataTruthFull).tolist()
-    
+    print("h1_error: " h1_error)
 
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
