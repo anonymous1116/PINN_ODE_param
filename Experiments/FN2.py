@@ -11,7 +11,7 @@ from solvers_utils import PretrainedSolver
 from networks import FCNN, SinActv
 from generators import SamplerGenerator, Generator1D
 from neurodiffeq import safe_diff as diff
-
+from utils import h1_error_trajectory
 
 class ODESystem(nn.Module):
     def __init__(self):
@@ -204,12 +204,14 @@ def main(args):
     #                                        axis=0))
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
                                             axis=0))
+    h1_error = h1_error_trajectory(estimate_t, estimate_funcs, ydataTruthFull).tolist()
     
+
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-    
+    np.save(f"{output_dir}/results/h1_error_{s}.npy", h1_error)
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
