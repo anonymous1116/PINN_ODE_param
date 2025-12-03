@@ -204,14 +204,36 @@ def main(args):
     #                                        axis=0))
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
                                             axis=0))
-    h1_error = h1_error_trajectory(estimate_t, estimate_funcs, ydataTruthFull).tolist()
-    print("h1_error: ", h1_error)
+    
+    dt = tvecObs[1] - tvecObs[0]
 
+    val_term = np.sum((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2) * dt
+    print("val_term_part:", val_term)
+    tmp = fOde(theta = param_results, x = estimate_funcs[observed_ind,:], tvec = tvecObs)
+    dtrue = fOde(theta = true_theta, x = ydataTruth, tvec = estimate_t)
+    der_term = np.sum((tmp  - dtrue) ** 2)* dt
+    print("der_term_part:", der_term)
+    h1_part = np.sqrt(val_term + der_term)
+    print("h1_part: ", h1_part)
+    
+
+    dt = estimate_t[1] - estimate_t[0]
+
+    val_term = np.sum((estimate_funcs[:, :] - ydataTruthFull[:, :]) ** 2) * dt
+    print("val_term_full:", val_term)
+    tmp = fOde(theta = param_results, x = estimate_funcs[:,:], tvec = estimate_t)
+    dtrue = fOde(theta = true_theta, x = ydataTruthFull, tvec = estimate_t)
+    der_term = np.sum((tmp  - dtrue) ** 2)* dt
+    print("der_term_full:", der_term)
+    h1_full = np.sqrt(val_term + der_term).tolist()
+    print("h1_full: ", h1_full)
+    
+    
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/h1_error_{s}.npy", h1_error)
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array([h1_part,h1_full]))
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
