@@ -156,7 +156,7 @@ def main():
             np.random.shuffle(y_ind)
             epoch_loss = 0.0
             batch_loss = 0.0
-            # model.train()
+            # model.train() 
             optimizer.zero_grad()
             for i in range(0, n, variable_batch_size):
                 variable_batch_id = y_ind[i:(i + variable_batch_size)]
