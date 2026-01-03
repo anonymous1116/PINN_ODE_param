@@ -242,13 +242,14 @@ def main(args):
     optimizer = torch.optim.Adam(model2.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
+    train_epochs = 10000
+    
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
         epoch_loss = 0.0
         batch_loss = 0.0
         # model.train()
-        train_epochs = 10000
-    
+        
         optimizer.zero_grad()
         for i in range(0, len(y_ind), variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
