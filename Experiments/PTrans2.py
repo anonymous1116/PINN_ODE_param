@@ -176,7 +176,7 @@ def main(args):
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(n)
-    train_epochs = 1000
+    train_epochs = 10
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -236,7 +236,7 @@ def main(args):
     model2.train()
     optimizer = torch.optim.Adam(model2.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(n)
-    train_epochs = 1000
+    train_epochs = 10
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
