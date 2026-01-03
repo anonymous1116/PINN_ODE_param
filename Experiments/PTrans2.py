@@ -122,6 +122,9 @@ def main(args):
     for j in range(5):
         ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
 
+    true_trajectory = pd.read_table( f"../depot_hyun/hyun/ODE_param/PTrans_trajectory.txt")
+    print(true_trajectory)
+
     #trajectory_RMSE = np.zeros((100, 5))
     trajectory = np.zeros((100, n, 5))
 
@@ -222,6 +225,68 @@ def main(args):
     print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
     print(f"param_results: {param_results}", flush=True)
     
+    #=============================
+    model2 = BaseSolver(diff_eqs=ODESystem(),
+                       net1=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
+                       net2=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
+                       net3=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
+                       net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
+                       net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
+    model2.load_state_dict(best_model.state_dict())
+    model2.train()
+    optimizer = torch.optim.Adam(model2.parameters(), lr=9e-3)  # 12e-3
+    y_ind = np.arange(n)
+    train_epochs = 1000
+    loss_history = []
+    for epoch in range(train_epochs):
+        np.random.shuffle(y_ind)
+        epoch_loss = 0.0
+        batch_loss = 0.0
+        # model.train()
+        optimizer.zero_grad()
+        for i in range(0, n, variable_batch_size):
+            variable_batch_id = y_ind[i:(i + variable_batch_size)]
+            batch_loss = model.compute_loss(
+                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
+                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
+                batch_y=ydata[variable_batch_id],  # [10, 5]
+                derivative_weight=0.07)  # 0.05
+            batch_loss.backward()
+            epoch_loss += batch_loss.item()
+            #if i % 100 == 0:
+            #     print(f'Train Epoch: {epoch} '
+            #           f'[{i:05}/{n} '
+            #           f'\tLoss: {batch_loss.item():.6f}')
+        optimizer.step()
+        if epoch % 100 == 0:
+            print(f'Train Epoch: {epoch} '
+                f'[{epoch}/{train_epochs}] '
+                f'\tLoss: {batch_loss.item():.6f}')
+        optimizer.step()
+        loss_history.append(epoch_loss)
+        if loss_history[-1] == min(loss_history):
+            best_model.load_state_dict(model.state_dict())
+
+    # check estimated path using 101 points
+    best_model.eval()
+    with torch.no_grad():
+        estimate_t = torch.linspace(0., 100., n)
+        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
+        estimate_funcs = torch.cat(estimate_funcs, dim=1)
+    estimate_funcs = estimate_funcs.numpy()
+    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
+    trajectory[s, :, :] = estimate_funcs
+    param_results = np.array([best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, 
+                               best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data])
+    #S, Sd, R, SR, Rpp
+    print(f"Simulation {s} finished")
+    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
+    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
+    print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
+    print(f"param_results: {param_results}", flush=True)
+    
+
+
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
