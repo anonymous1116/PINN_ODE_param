@@ -151,7 +151,7 @@ def main(args):
         np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull)
         np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth)
         #np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind)
-        print("ydataTruthFull, ydataTruth, observed_ind saved", flush=True)    
+        print("ydataTruthFull, ydataTruth saved", flush=True)    
     
     t_min = 0.0
     t_max = 100.0
@@ -173,7 +173,7 @@ def main(args):
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(n)
-    train_epochs = 1000
+    train_epochs = 100
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -191,10 +191,10 @@ def main(args):
                 derivative_weight=0.07)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-            if i % 100 == 0:
-                 print(f'Train Epoch: {epoch} '
-                       f'[{i:05}/{n} '
-                       f'\tLoss: {batch_loss.item():.6f}')
+            #if i % 100 == 0:
+            #     print(f'Train Epoch: {epoch} '
+            #           f'[{i:05}/{n} '
+            #           f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
         if epoch % 100 == 0:
             print(f'Train Epoch: {epoch} '
@@ -213,8 +213,12 @@ def main(args):
     estimate_funcs = estimate_funcs.numpy()
     trajectory_RMSE[s, :] = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
-    print(f"Simulation {s} finished")
+    #param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
 
+    print(f"Simulation {s} finished")
+    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
+    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
+    
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
