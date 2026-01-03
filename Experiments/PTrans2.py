@@ -122,7 +122,7 @@ def main(args):
     for j in range(5):
         ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
 
-    trajectory_RMSE = np.zeros((100, 5))
+    #trajectory_RMSE = np.zeros((100, 5))
     trajectory = np.zeros((100, n, 5))
 
     np.random.seed(SEED[s, 0].data)
@@ -211,7 +211,7 @@ def main(args):
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
-    trajectory_RMSE[s, :] = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
+    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
     param_results = np.array([best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, 
                                best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.km.data])
