@@ -198,7 +198,7 @@ def main(args):
         optimizer.step()
         if epoch % 100 == 0:
             print(f'Train Epoch: {epoch} '
-                f'[{i:05}/{n} '
+                f'[{i:05}/{train_epochs}] '
                 f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
         loss_history.append(epoch_loss)
@@ -213,8 +213,8 @@ def main(args):
     estimate_funcs = estimate_funcs.numpy()
     trajectory_RMSE[s, :] = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
-    param_results = np.array([best_model.diff_eqs.S0.data, best_model.diff_eqs.Sd0.data, 
-                               best_model.diff_eqs.R0.data, best_model.diff_eqs.SR0.data, best_model.diff_eqs.Rpp0.data])
+    param_results = np.array([best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, 
+                               best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.km.data])
     #S, Sd, R, SR, Rpp
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
