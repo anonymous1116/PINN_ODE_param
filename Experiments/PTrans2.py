@@ -8,7 +8,7 @@ from networks import FCNN
 from generators import SamplerGenerator, Generator1D
 from neurodiffeq import safe_diff as diff
 import argparse, os
-
+from pathlib import Path
 
 class ODESystem(nn.Module):
     def __init__(self):
@@ -81,6 +81,9 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
 
 def main(args):
     s = args.seed
+    now_FILE = Path(__file__).resolve()
+    now_DIR = now_FILE.parent
+
     ydataTruth = [[1, 0.588261834720057, 0.405587021811379,
                 0.233954596382738, 0.185824926227245, 0.121529475508475, 0.0660579216704765,
                 0.0232239721559163, 0.00753621476608807, 0.000635757067732186,
@@ -109,7 +112,7 @@ def main(args):
     ydataTruth = np.array(ydataTruth).transpose()
 
     # run 100 simulations
-    SEED = pd.read_table("./PTrans_noise0001_seed.txt", delim_whitespace=True, header=None)
+    SEED = pd.read_table(f"{now_DIR}/PTrans_noise0001_seed.txt", delim_whitespace=True, header=None)
     SEED = torch.tensor(data=SEED.values, dtype=torch.int)
     n = 101
     tvecObs = [0, 1, 2, 4, 5, 7, 10, 15, 20, 30, 40, 50, 60, 80, 100]
