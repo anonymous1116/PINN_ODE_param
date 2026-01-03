@@ -278,7 +278,7 @@ def main(args):
     # check estimated path using 101 points
     best_model.eval()
     with torch.no_grad():
-        estimate_t = torch.linspace(0., 1000., 1000)
+        estimate_t = torch.linspace(0., 1000., 1001)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
