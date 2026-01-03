@@ -186,7 +186,7 @@ def main(args):
         optimizer.zero_grad()
         for i in range(0, n, variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            batch_loss = model2.compute_loss(
+            batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
                 variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
                 batch_y=true_y[variable_batch_id],  # [10, 5]
@@ -249,7 +249,7 @@ def main(args):
         optimizer.zero_grad()
         for i in range(0, len(y_ind), variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            batch_loss = model.compute_loss(
+            batch_loss = model2.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
                 variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)], 
                 batch_y=ydata[variable_batch_id],  # [10, 5]
