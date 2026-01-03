@@ -189,7 +189,7 @@ def main(args):
             batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
                 variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
-                batch_y=torch.from_numpy(true_y)[variable_batch_id],  # [10, 5]
+                batch_y=true_y[variable_batch_id],  # [10, 5]
                 derivative_weight=0.07)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
@@ -207,9 +207,9 @@ def main(args):
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
 
-    print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
-    print(f"variable_batch_t: {[t[variable_batch_id].view(-1, 1)]}")
-    print(f"batch_y: {true_y[variable_batch_id]}")
+    #print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
+    #print(f"variable_batch_t: {[t[variable_batch_id].view(-1, 1)]}")
+    #print(f"batch_y: {true_y[variable_batch_id]}")
     
     # check estimated path using 101 points
     best_model.eval()
@@ -249,14 +249,14 @@ def main(args):
         optimizer.zero_grad()
         for i in range(0, len(y_ind), variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
-            print(f"variable_batch_t: {[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)]}")
-            print(f"batch_y: {ydata[variable_batch_id]}")
+            #print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
+            #print(f"variable_batch_t: {[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)]}")
+            #print(f"batch_y: {ydata[variable_batch_id]}")
     
             batch_loss = model2.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
                 variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)], 
-                batch_y=ydata[variable_batch_id],  # [10, 5]
+                batch_y=torch.from_numpy(ydata)[variable_batch_id],  # [10, 5]
                 derivative_weight=0.07)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
