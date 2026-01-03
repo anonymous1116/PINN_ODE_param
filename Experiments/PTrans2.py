@@ -175,8 +175,8 @@ def main(args):
                             net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
-    y_ind = np.arange(len(tvecObs))
-    train_epochs = 10
+    y_ind = np.arange(n)
+    train_epochs = 1000
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -188,7 +188,7 @@ def main(args):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
             batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[torch.tensor(tvecObs, dtype=torch.float32)[variable_batch_id].view(-1, 1)],  # list([10, 1])
+                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
                 batch_y=true_y[variable_batch_id],  # [10, 5]
                 derivative_weight=0.07)  # 0.05
             batch_loss.backward()
@@ -235,7 +235,7 @@ def main(args):
     model2.load_state_dict(best_model.state_dict())
     model2.train()
     optimizer = torch.optim.Adam(model2.parameters(), lr=9e-3)  # 12e-3
-    y_ind = np.arange(n)
+    y_ind = np.arange(len(tvecObs))
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -247,7 +247,7 @@ def main(args):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
             batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
+                variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)],  # list([10, 1])
                 batch_y=ydata[variable_batch_id],  # [10, 5]
                 derivative_weight=0.07)  # 0.05
             batch_loss.backward()
