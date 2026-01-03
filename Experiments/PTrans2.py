@@ -124,7 +124,7 @@ def main(args):
 
     true_trajectory = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory.txt", header=None)
     true_trajectory = true_trajectory.to_numpy()
-    print(true_trajectory)
+    print(true_trajectory.shape)
 
     #trajectory_RMSE = np.zeros((100, 5))
     trajectory = np.zeros((100, n, 5))
