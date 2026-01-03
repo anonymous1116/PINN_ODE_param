@@ -207,9 +207,9 @@ def main(args):
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
 
-        print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
-        print(f"variable_batch_t: {[t[variable_batch_id].view(-1, 1)]}")
-        print(f"batch_y: {true_y[variable_batch_id]}")
+        #print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
+        #print(f"variable_batch_t: {[t[variable_batch_id].view(-1, 1)]}")
+        #print(f"batch_y: {true_y[variable_batch_id]}")
         
     # check estimated path using 101 points
     best_model.eval()
@@ -269,9 +269,9 @@ def main(args):
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model2.state_dict())
-        print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
-        print(f"variable_batch_t: {[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)]}")
-        print(f"batch_y: {ydata[variable_batch_id]}")
+        #print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
+        #print(f"variable_batch_t: {[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)]}")
+        #print(f"batch_y: {ydata[variable_batch_id]}")
         
     # check estimated path using 101 points
     best_model.eval()
