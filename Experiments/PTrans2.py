@@ -123,7 +123,7 @@ def main(args):
         ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
 
     true_trajectory = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory.txt", header=None)
-    true_trajectory = true_trajectory[:,1:6].to_numpy()
+    true_trajectory = true_trajectory.to_numpy()[:,1:6]
     print(true_trajectory.shape)
 
     #trajectory_RMSE = np.zeros((100, 5))
