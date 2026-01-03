@@ -247,7 +247,7 @@ def main(args):
         batch_loss = 0.0
         # model.train()
         optimizer.zero_grad()
-        for i in range(0, n, variable_batch_size):
+        for i in range(0, len(y_ind), variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
             batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
