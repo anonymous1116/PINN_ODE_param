@@ -122,7 +122,7 @@ def main(args):
     for j in range(5):
         ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
 
-    true_trajectory = pd.read_table( f"../depot_hyun/hyun/ODE_param/PTrans_trajectory.txt")
+    true_trajectory = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory.txt")
     print(true_trajectory)
 
     #trajectory_RMSE = np.zeros((100, 5))
@@ -151,8 +151,8 @@ def main(args):
     
     np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
     if s == 1:
-        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull)
-        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth)
+        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull) #Full Trajectory
+        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth) 
         #np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind)
         print("ydataTruthFull, ydataTruth saved", flush=True)    
     
@@ -265,23 +265,23 @@ def main(args):
         optimizer.step()
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
-            best_model.load_state_dict(model.state_dict())
+            best_model.load_state_dict(model2.state_dict())
 
     # check estimated path using 101 points
     best_model.eval()
     with torch.no_grad():
-        estimate_t = torch.linspace(0., 100., n)
+        estimate_t = torch.linspace(0., 1000., 1000)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
-    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
-    trajectory[s, :, :] = estimate_funcs
+    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-true_trajectory)**2, axis=0))
+    #trajectory[s, :, :] = estimate_funcs
     param_results = np.array([best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, 
                                best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data])
     #S, Sd, R, SR, Rpp
     print(f"Simulation {s} finished")
-    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
+    np.save(f"{output_dir}/results/trajectory_RMSE2_{s}.npy", trajectory_RMSE)
+    np.save(f"{output_dir}/results/param_results2_{s}.npy", param_results)
     print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
     print(f"param_results: {param_results}", flush=True)
     

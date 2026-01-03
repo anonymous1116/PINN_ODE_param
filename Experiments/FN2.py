@@ -143,9 +143,9 @@ def main(args):
     
     np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
     if s == 1:
-        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull)
-        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth)
-        np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind)
+        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull) #Full Trajectory
+        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth) # Trajectory within observed time
+        np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind) 
         print("ydataTruthFull, ydataTruth, observed_ind saved", flush=True)    
     
     t = torch.linspace(0., 20., n)  # torch.float32
