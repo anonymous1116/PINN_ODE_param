@@ -213,8 +213,8 @@ def main(args):
     estimate_funcs = estimate_funcs.numpy()
     trajectory_RMSE[s, :] = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
-    param_results = np.array([best_model.diff_eqs.S.data, best_model.diff_eqs.Sd.data, 
-                               best_model.diff_eqs.R.data, best_model.diff_eqs.SR.data, best_model.diff_eqs.Rpp.data])
+    param_results = np.array([best_model.diff_eqs.S0.data, best_model.diff_eqs.Sd0.data, 
+                               best_model.diff_eqs.R0.data, best_model.diff_eqs.SR0.data, best_model.diff_eqs.Rpp0.data])
     #S, Sd, R, SR, Rpp
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
