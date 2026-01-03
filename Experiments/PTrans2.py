@@ -230,6 +230,15 @@ def main(args):
     print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
     print(f"param_results: {param_results}", flush=True)
     
+
+    with torch.no_grad():
+        estimate_t = torch.linspace(0., 1000., 1001)
+        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
+        estimate_funcs = torch.cat(estimate_funcs, dim=1)
+    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-true_trajectory)**2, axis=0))
+    np.save(f"{output_dir}/results/trajectory_RMSE_withtrue_{s}.npy", trajectory_RMSE)
+    
+
 #====================================================================================#=============================
     model2 = BaseSolver(diff_eqs=ODESystem(),
                        net1=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
@@ -239,7 +248,7 @@ def main(args):
                        net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     model2.load_state_dict(best_model.state_dict())
     model2.train()
-    optimizer = torch.optim.Adam(model2.parameters(), lr=9e-3)  # 12e-3
+    optimizer = torch.optim.Adam(model2.parameters(), lr=1e-3)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
     train_epochs = 10000
