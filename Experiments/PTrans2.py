@@ -175,7 +175,7 @@ def main(args):
                             net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
-    y_ind = np.arange(n)
+    y_ind = np.arange(len(tvecObs))
     train_epochs = 10
     loss_history = []
     for epoch in range(train_epochs):
