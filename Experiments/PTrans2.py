@@ -219,6 +219,8 @@ def main(args):
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
+    print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
+    print(f"param_results: {param_results}", flush=True)
     
 
 def get_args():
