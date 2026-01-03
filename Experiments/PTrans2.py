@@ -114,9 +114,11 @@ def main(args):
     n = 101
     tvecObs = [0, 1, 2, 4, 5, 7, 10, 15, 20, 30, 40, 50, 60, 80, 100]
     tvecFull = np.linspace(0, 100, num=n)
+    
     ydataTruthFull = np.zeros((n, 5))
-    #for j in range(5):
-    #    ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
+    for j in range(5):
+        ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
+
     trajectory_RMSE = np.zeros((100, 5))
     trajectory = np.zeros((100, n, 5))
 
@@ -135,6 +137,19 @@ def main(args):
         ydataFull[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])  # [101, 5]
     t = torch.linspace(0., 100., n)  # torch.float32
     true_y = torch.from_numpy(ydataFull)  # torch.float64
+
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}"
+    os.makedirs(f"{output_dir}/ydata", exist_ok=True)
+    os.makedirs(f"{output_dir}/results", exist_ok=True)
+    
+    
+    np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
+    if s == 1:
+        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull)
+        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth)
+        #np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind)
+        print("ydataTruthFull, ydataTruth, observed_ind saved", flush=True)    
+    
     t_min = 0.0
     t_max = 100.0
     variable_batch_size = 10
@@ -173,6 +188,11 @@ def main(args):
                 derivative_weight=0.07)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
+            if i % 100 == 0:
+                 print(f'Train Epoch: {epoch} '
+                       f'[{i:05}/{n} '
+                       f'\tLoss: {batch_loss.item():.6f}')
+        optimizer.step()
         if epoch % 100 == 0:
             print(f'Train Epoch: {epoch} '
                 f'[{i:05}/{n} '

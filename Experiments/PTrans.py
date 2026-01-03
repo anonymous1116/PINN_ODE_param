@@ -182,3 +182,4 @@ for s in range(100):
     trajectory_RMSE[s, :] = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
     print(f"Simulation {s} finished")
+    
