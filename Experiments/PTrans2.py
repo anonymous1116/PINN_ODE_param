@@ -236,7 +236,6 @@ def main(args):
     model2.train()
     optimizer = torch.optim.Adam(model2.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(n)
-    train_epochs = 10
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
