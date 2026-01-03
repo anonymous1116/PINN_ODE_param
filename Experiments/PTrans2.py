@@ -156,7 +156,7 @@ def main(args):
     t_min = 0.0
     t_max = 100.0
     variable_batch_size = 10
-    derivative_batch_size = 100
+    derivative_batch_size = 1000
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     model = BaseSolver(diff_eqs=ODESystem(),
@@ -173,7 +173,7 @@ def main(args):
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(n)
-    train_epochs = 10000
+    train_epochs = 1000
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -183,7 +183,6 @@ def main(args):
         optimizer.zero_grad()
         for i in range(0, n, variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
             batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
                 variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
@@ -206,6 +205,7 @@ def main(args):
             best_model.load_state_dict(model.state_dict())
 
     # check estimated path using 101 points
+    best_model.eval()
     with torch.no_grad():
         estimate_t = torch.linspace(0., 100., n)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
