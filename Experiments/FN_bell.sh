@@ -4,7 +4,7 @@
 #SBATCH --partition=cpu
 #SBATCH --account=statdept
 #SBATCH --time=01:00:00
-#SBATCH --qos=normal
+#SBATCH --qos=standby
 #SBATCH --array=0-99               # Create a job array with indices from 1 to 10
 #SBATCH --output=output_log_training/output_log_%A_%a.out
 #SBATCH --error=output_log_training/error_log_%A_%a.txt
