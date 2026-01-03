@@ -188,7 +188,7 @@ def main(args):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
             batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[torch.tensor(tvecObs)[variable_batch_id].view(-1, 1)],  # list([10, 1])
+                variable_batch_t=[torch.tensor(tvecObs, dtype=torch.float32)[variable_batch_id].view(-1, 1)],  # list([10, 1])
                 batch_y=true_y[variable_batch_id],  # [10, 5]
                 derivative_weight=0.07)  # 0.05
             batch_loss.backward()
