@@ -183,6 +183,11 @@ def main(args):
         estimate_t = torch.linspace(0., 100., n)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
+
+        estimate_t_1000 = torch.linspace(0., 100., 1001)
+        estimate_funcs_1000 = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t_1000.view(-1, 1)])
+        estimate_funcs_1000 = torch.cat(estimate_funcs_1000, dim=1)
+
     estimate_funcs = estimate_funcs.numpy()
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
@@ -194,6 +199,13 @@ def main(args):
     #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
     trajectory_RMSE_100 = np.sqrt(np.mean((estimate_funcs-true_trajectory_100.numpy())**2, axis=0))
     
+    true_trajectory_1000 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_1000.txt", header=None)
+    true_trajectory_1000 = torch.tensor(true_trajectory_1000.to_numpy()[:,1:6], dtype = torch.float32)
+    #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
+    trajectory_RMSE_1000 = np.sqrt(np.mean((estimate_funcs_1000-true_trajectory_1000.numpy())**2, axis=0))
+    
+
+    # save
     sci_str = format(args.true_sigma, ".0e")
     output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_base_{sci_str}"
     os.makedirs(f"{output_dir}/results", exist_ok=True)
@@ -201,6 +213,7 @@ def main(args):
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/trajectory_RMSE100_{s}.npy", trajectory_RMSE_100)
+    np.save(f"{output_dir}/results/trajectory_RMSE1000_{s}.npy", trajectory_RMSE_1000)
     print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
     print(f"trajectory_RMSE_100: {trajectory_RMSE_100}", flush=True)
     
