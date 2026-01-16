@@ -191,7 +191,7 @@ def main(args):
 
     sci_str = format(args.true_sigma, ".0e")
     output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_base_{sci_str}"
-    os.makedirs(f"{output_dir}", exist_ok=True)
+    os.makedirs(f"{output_dir}/results", exist_ok=True)
     
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
