@@ -202,7 +202,7 @@ def main(args):
     true_trajectory_1000 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_1000.txt", header=None)
     true_trajectory_1000 = torch.tensor(true_trajectory_1000.to_numpy()[:,1:6], dtype = torch.float32)
     #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
-    trajectory_RMSE_1000 = np.sqrt(np.mean((estimate_funcs_1000-true_trajectory_1000.numpy())**2, axis=0))
+    trajectory_RMSE_1000 = np.sqrt(np.mean((estimate_funcs_1000.numpy()-true_trajectory_1000.numpy())**2, axis=0))
     
 
     # save
