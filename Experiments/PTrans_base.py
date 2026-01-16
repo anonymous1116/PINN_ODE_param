@@ -134,7 +134,7 @@ def main(args):
     t_min = 0.0
     t_max = 100.0
     variable_batch_size = 10
-    derivative_batch_size = 100
+    derivative_batch_size = 1000
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     model = BaseSolver(diff_eqs=ODESystem(),
