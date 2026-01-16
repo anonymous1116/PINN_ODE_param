@@ -109,7 +109,12 @@ def main(args):
     ydataTruth = np.array(ydataTruth).transpose()
 
     # run 100 simulations
-    SEED = pd.read_table("./Experiments/PTrans_noise001_seed.txt", delim_whitespace=True, header=None)
+    if args.seed == 1e-2:
+        sigma_cha = "001"
+    elif args.seed == 1e-3:
+        sigma_cha = "0001"     
+
+    SEED = pd.read_table(f"./Experiments/PTrans_noise{sigma_cha}_seed.txt", delim_whitespace=True, header=None)
     SEED = torch.tensor(data=SEED.values, dtype=torch.int)
     n = 101
     tvecObs = [0, 1, 2, 4, 5, 7, 10, 15, 20, 30, 40, 50, 60, 80, 100]
@@ -182,13 +187,12 @@ def main(args):
     with torch.no_grad():
         estimate_t = torch.linspace(0., 100., n)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
-        estimate_funcs = torch.cat(estimate_funcs, dim=1)
+        estimate_funcs = torch.cat(estimate_funcs, dim=1).numpy()
 
         estimate_t_1000 = torch.linspace(0., 100., 1001)
         estimate_funcs_1000 = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t_1000.view(-1, 1)])
-        estimate_funcs_1000 = torch.cat(estimate_funcs_1000, dim=1)
+        estimate_funcs_1000 = torch.cat(estimate_funcs_1000, dim=1).numpy()
 
-    estimate_funcs = estimate_funcs.numpy()
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
     print(f"Simulation {s} finished")
@@ -202,7 +206,7 @@ def main(args):
     true_trajectory_1000 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_1000.txt", header=None)
     true_trajectory_1000 = torch.tensor(true_trajectory_1000.to_numpy()[:,1:6], dtype = torch.float32)
     #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
-    trajectory_RMSE_1000 = np.sqrt(np.mean((estimate_funcs_1000.numpy()-true_trajectory_1000.numpy())**2, axis=0))
+    trajectory_RMSE_1000 = np.sqrt(np.mean((estimate_funcs_1000-true_trajectory_1000.numpy())**2, axis=0))
     
 
     # save
