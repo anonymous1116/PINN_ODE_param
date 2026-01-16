@@ -216,6 +216,7 @@ def main(args):
     np.save(f"{output_dir}/results/trajectory_RMSE1000_{s}.npy", trajectory_RMSE_1000)
     print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
     print(f"trajectory_RMSE_100: {trajectory_RMSE_100}", flush=True)
+    print(f"trajectory_RMSE_1000: {trajectory_RMSE_1000}", flush=True)
     
 
 def get_args():
