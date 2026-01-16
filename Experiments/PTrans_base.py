@@ -189,6 +189,13 @@ def main(args):
     print(trajectory_RMSE[s,:])
     
 
+    sci_str = format(args.true_sigma, ".0e")
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}"
+    
+    print(f"Simulation {s} finished")
+    np.save(f"{output_dir}/results/trajectory_RMSE2_{s}.npy", trajectory_RMSE)
+    print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
+    
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
