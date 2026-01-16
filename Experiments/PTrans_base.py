@@ -256,7 +256,7 @@ def main(args):
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
                 variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)], 
                 batch_y=torch.from_numpy(ydata)[variable_batch_id],  # [10, 5]
-                derivative_weight=0.07)  # 0.05
+                derivative_weight=0.007)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
             #if i % 100 == 0:
@@ -307,9 +307,6 @@ def main(args):
     print(f"trajectory_RMSE_100_after: {trajectory_RMSE_100}", flush=True)
     print(f"trajectory_RMSE_1000_after: {trajectory_RMSE_1000}", flush=True)
     
-
-
-
 
 
 def get_args():
