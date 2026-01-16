@@ -304,8 +304,8 @@ def main(args):
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE100_{s}_after.npy", trajectory_RMSE_100)
     np.save(f"{output_dir}/results/trajectory_RMSE1000_{s}_after.npy", trajectory_RMSE_1000)
-    print(f"trajectory_RMSE_100: {trajectory_RMSE_100}", flush=True)
-    print(f"trajectory_RMSE_1000: {trajectory_RMSE_1000}", flush=True)
+    print(f"trajectory_RMSE_100_after: {trajectory_RMSE_100}", flush=True)
+    print(f"trajectory_RMSE_1000_after: {trajectory_RMSE_1000}", flush=True)
     
 
 
