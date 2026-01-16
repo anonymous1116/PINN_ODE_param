@@ -301,15 +301,9 @@ def main(args):
     
 
     # save
-    sci_str = format(args.true_sigma, ".0e")
-    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_base_{sci_str}"
-    os.makedirs(f"{output_dir}/results", exist_ok=True)
-    
     print(f"Simulation {s} finished")
-    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/trajectory_RMSE100_{s}.npy", trajectory_RMSE_100)
-    np.save(f"{output_dir}/results/trajectory_RMSE1000_{s}.npy", trajectory_RMSE_1000)
-    print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
+    np.save(f"{output_dir}/results/trajectory_RMSE100_{s}_after.npy", trajectory_RMSE_100)
+    np.save(f"{output_dir}/results/trajectory_RMSE1000_{s}_after.npy", trajectory_RMSE_1000)
     print(f"trajectory_RMSE_100: {trajectory_RMSE_100}", flush=True)
     print(f"trajectory_RMSE_1000: {trajectory_RMSE_1000}", flush=True)
     
