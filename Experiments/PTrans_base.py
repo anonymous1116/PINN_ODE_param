@@ -188,14 +188,18 @@ def main(args):
     trajectory[s, :, :] = estimate_funcs
     print(f"Simulation {s} finished")
     print(trajectory_RMSE)
-    
 
+    true_trajectory_100 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_100.txt", header=None)
+    true_trajectory_100 = torch.tensor(true_trajectory_100.to_numpy()[:,1:6], dtype = torch.float32)
+    trajectory_RMSE_100 = torch.sqrt(torch.mean((estimate_funcs-true_trajectory_100)**2, axis=0)).numpy
+    
     sci_str = format(args.true_sigma, ".0e")
     output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_base_{sci_str}"
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
+    np.save(f"{output_dir}/results/trajectory_RMSE100_{s}.npy", trajectory_RMSE_100)
     print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
     
 
