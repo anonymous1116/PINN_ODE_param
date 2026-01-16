@@ -113,8 +113,8 @@ def main(args):
         sigma_cha = "001"
     elif args.true_sigma == 1e-3:
         sigma_cha = "0001"     
-    else:
-        sigma_cha = "001"
+    #else:
+    #    sigma_cha = "001"
 
     SEED = pd.read_table(f"./Experiments/PTrans_noise{sigma_cha}_seed.txt", delim_whitespace=True, header=None)
     SEED = torch.tensor(data=SEED.values, dtype=torch.int)
