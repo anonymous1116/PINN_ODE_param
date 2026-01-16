@@ -237,7 +237,7 @@ def main(args):
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     print(estimate_funcs.size())
     print(true_trajectory.shape)
-    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-true_trajectory )**2, axis=0))
+    trajectory_RMSE = torch.sqrt(torch.mean((estimate_funcs-true_trajectory )**2, axis=0))
     np.save(f"{output_dir}/results/trajectory_RMSE_withtrue_{s}.npy", trajectory_RMSE)
     
 
