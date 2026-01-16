@@ -306,8 +306,6 @@ def main(args):
     print(f"param_results: {param_results}", flush=True)
     
 
-
-
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
     parser.add_argument("--seed", type = int, default = 1,
