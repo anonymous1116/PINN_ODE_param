@@ -122,9 +122,10 @@ def main(args):
 
 
     s = args.seed
+
     np.random.seed(SEED[s, 0].data)
     torch.manual_seed(SEED[s, 0].data)
-    ydata = ydataTruth + np.random.normal(0, 0.001, ydataTruth.shape)  # [15, 5]
+    ydata = ydataTruth + np.random.normal(0, args.true_sigma, ydataTruth.shape)  # [15, 5]
     ydataFull = np.zeros((n, 5))
     for j in range(5):
         ydataFull[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])  # [101, 5]
