@@ -123,7 +123,7 @@ def main(args):
         ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
 
     true_trajectory = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory.txt", header=None)
-    true_trajectory = torch.tensor(true_trajectory.to_numpy()[:,1:6])
+    true_trajectory = torch.tensor(true_trajectory.to_numpy()[:,1:6], dtype = torch.float32)
     print(true_trajectory.size())
     print(true_trajectory)
     #trajectory_RMSE = np.zeros((100, 5))
