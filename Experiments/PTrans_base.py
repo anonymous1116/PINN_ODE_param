@@ -234,10 +234,10 @@ def main(args):
     #                   net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     model.load_state_dict(best_model.state_dict())
     model.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)  # 12e-3
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
-    train_epochs = 10000
+    train_epochs = 1000
     
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -256,7 +256,7 @@ def main(args):
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
                 variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)], 
                 batch_y=torch.from_numpy(ydata)[variable_batch_id],  # [10, 5]
-                derivative_weight=0.007)  # 0.05
+                derivative_weight=0.07)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
             #if i % 100 == 0:
