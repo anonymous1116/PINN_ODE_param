@@ -235,7 +235,7 @@ def main(args):
         estimate_t = torch.linspace(0., 1000., 1001)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
-    print(trajectory_RMSE.size())
+    print(estimate_funcs.size())
     print(true_trajectory.shape)
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-true_trajectory )**2, axis=0))
     np.save(f"{output_dir}/results/trajectory_RMSE_withtrue_{s}.npy", trajectory_RMSE)
