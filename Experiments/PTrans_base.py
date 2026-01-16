@@ -170,7 +170,7 @@ def main(args):
             epoch_loss += batch_loss.item()
         if epoch % 100 == 0:
             print(f'Train Epoch: {epoch} '
-                    f'[{epoch:05}/{train_epochs} '
+                    f'[{epoch}/{train_epochs} '
                     f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
         loss_history.append(epoch_loss)

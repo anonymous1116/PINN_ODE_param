@@ -312,8 +312,8 @@ def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
     parser.add_argument("--seed", type = int, default = 1,
                         help = "See number (default: 1)")
-    parser.add_argument("--true_sigma", type = float, default = 0.2,
-                        help = "observation errors (default: 0.2)")
+    parser.add_argument("--true_sigma", type = float, default = 0.01,
+                        help = "observation errors (default: 0.01)")
     return parser.parse_args()
 
 if __name__ == "__main__":
