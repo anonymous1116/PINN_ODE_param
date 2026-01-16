@@ -109,9 +109,9 @@ def main(args):
     ydataTruth = np.array(ydataTruth).transpose()
 
     # run 100 simulations
-    if args.seed == 1e-2:
+    if args.true_sigma == 1e-2:
         sigma_cha = "001"
-    elif args.seed == 1e-3:
+    elif args.true_sigma == 1e-3:
         sigma_cha = "0001"     
     else:
         sigma_cha = "001"
