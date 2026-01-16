@@ -186,7 +186,7 @@ def main(args):
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
     print(f"Simulation {s} finished")
-    print(trajectory_RMSE[s,:])
+    print(trajectory_RMSE)
     
 
     sci_str = format(args.true_sigma, ".0e")
