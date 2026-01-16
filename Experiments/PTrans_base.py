@@ -224,6 +224,9 @@ def main(args):
     print(f"trajectory_RMSE_100: {trajectory_RMSE_100}", flush=True)
     print(f"trajectory_RMSE_1000: {trajectory_RMSE_1000}", flush=True)
     
+    os.makedirs(f"{output_dir}/ydata", exist_ok=True)
+    np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
+    
 
     #======================================= with only ydata ==============================#=============================
     #model2 = BaseSolver(diff_eqs=ODESystem(),
@@ -307,7 +310,7 @@ def main(args):
     print(f"trajectory_RMSE_100_after: {trajectory_RMSE_100}", flush=True)
     print(f"trajectory_RMSE_1000_after: {trajectory_RMSE_1000}", flush=True)
     
-
+    
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
