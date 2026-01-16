@@ -294,7 +294,7 @@ def main(args):
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
-    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-true_trajectory)**2, axis=0))
+    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-torch.tensor(true_trajectory ))**2, axis=0))
     #trajectory[s, :, :] = estimate_funcs
     param_results = np.array([best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, 
                                best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data])
