@@ -7,7 +7,7 @@ from solvers_utils import PretrainedSolver
 from networks import FCNN
 from generators import SamplerGenerator, Generator1D
 from neurodiffeq import safe_diff as diff
-import argparse
+import argparse, os
 
 
 class ODESystem(nn.Module):
@@ -191,6 +191,7 @@ def main(args):
 
     sci_str = format(args.true_sigma, ".0e")
     output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_base_{sci_str}"
+    os.makedirs(f"{output_dir}", exist_ok=True)
     
     print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
