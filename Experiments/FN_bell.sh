@@ -25,6 +25,6 @@ seed=$((SLURM_ARRAY_TASK_ID))
 
 #python ./Experiments/FN_SA.py --seed $seed --true_sigma 2e-1
 #python ./Experiments/FN2.py --seed $seed --true_sigma 2e-1
-python ./Experiments/PTrans2.py --seed $seed --true_sigma 1e-3
-python ./Experiments/PTrans2.py --seed $seed --true_sigma 1e-2
+#python ./Experiments/PTrans2.py --seed $seed --true_sigma 1e-3
+python ./Experiments/PTrans2_base.py --seed $seed --true_sigma 1e-2
 
