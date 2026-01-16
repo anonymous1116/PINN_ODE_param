@@ -191,7 +191,8 @@ def main(args):
 
     true_trajectory_100 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_100.txt", header=None)
     true_trajectory_100 = torch.tensor(true_trajectory_100.to_numpy()[:,1:6], dtype = torch.float32)
-    trajectory_RMSE_100 = np.sqrt(np.mean((estimate_funcs-true_trajectory_100.numpy)**2, axis=0))
+    #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
+    trajectory_RMSE_100 = np.sqrt(np.mean((estimate_funcs-true_trajectory_100.numpy())**2, axis=0))
     
     sci_str = format(args.true_sigma, ".0e")
     output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_base_{sci_str}"
