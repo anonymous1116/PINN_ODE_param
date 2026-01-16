@@ -168,10 +168,10 @@ def main(args):
                 derivative_weight=0.07)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-            if i % 100 == 0:
-               print(f'Train Epoch: {epoch} '
-                     f'[{i:05}/{n} '
-                     f'\tLoss: {batch_loss.item():.6f}')
+        if epoch % 100 == 0:
+            print(f'Train Epoch: {epoch} '
+                    f'[{epoch:05}/{train_epochs} '
+                    f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
@@ -183,7 +183,7 @@ def main(args):
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
-    trajectory_RMSE[s, :] = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
+    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
     trajectory[s, :, :] = estimate_funcs
     print(f"Simulation {s} finished")
     print(trajectory_RMSE[s,:])
