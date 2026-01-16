@@ -190,10 +190,10 @@ def main(args):
     
 
     sci_str = format(args.true_sigma, ".0e")
-    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}"
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_{sci_str}"
     
     print(f"Simulation {s} finished")
-    np.save(f"{output_dir}/results/trajectory_RMSE2_{s}.npy", trajectory_RMSE)
+    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
     
 
