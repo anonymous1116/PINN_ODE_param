@@ -163,6 +163,14 @@ def main(args):
                     net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
                     net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer,
+                mode="min",
+                factor=0.5,
+                patience=10,
+                min_lr=1e-6
+                )
+
     
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
@@ -188,10 +196,14 @@ def main(args):
                     f'[{i:05}/{n} '
                     f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
+        scheduler.step(batch_loss)
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
+
+
     # check estimated parameters
+    best_model.eval()
     param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
 
     # check estimated path
