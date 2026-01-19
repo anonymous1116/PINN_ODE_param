@@ -79,7 +79,7 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         return derivative_weight * derivative_loss + variable_loss
 
 
-def fOde(t, y, theta, eps=1e-12):
+def fOde(theta, x, t, eps=1e-12):
     """
     RHS f(t, y; theta) for the 5-state system.
     y: array-like (5,) -> [S, Sd, R, SR, Rpp]
@@ -91,7 +91,7 @@ def fOde(t, y, theta, eps=1e-12):
     else:
         k1, k2, k3, k4, V, Km = theta  # assume tuple/list in this order
 
-    S, Sd, R, SR, Rpp = y
+    S, Sd, R, SR, Rpp = x
 
     denom = Km + Rpp
     denom = denom if denom > 0 else eps  # guard against division by zero
@@ -184,7 +184,7 @@ def main(args):
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(n)
-    train_epochs = 2000
+    train_epochs = 100
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -253,9 +253,9 @@ def main(args):
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
     
-
-    S, Sd, R, SR, Rpp = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t])
-    param_results = torch.cat([S, Sd, R, SR, Rpp], dim=1)  # (N,5)
+    best_model.eval()
+    k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
+    param_results = torch.cat([k1, k2, k3, k4, V, Km], dim=1)  # (N,5)
     
     dt = estimate_t[1] - estimate_t[0]
 
@@ -353,8 +353,10 @@ def main(args):
     print(f"trajectory_RMSE_100_after: {trajectory_RMSE_100}", flush=True)
     print(f"trajectory_RMSE_1000_after: {trajectory_RMSE_1000}", flush=True)
     
-    S, Sd, R, SR, Rpp = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t])
-    param_results = torch.cat([S, Sd, R, SR, Rpp], dim=1)  # (N,5)
+    
+    best_model.eval()
+    k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
+    param_results = torch.cat([k1, k2, k3, k4, V, Km], dim=1)  # (N,5)
     
     dt = estimate_t[1] - estimate_t[0]
 
