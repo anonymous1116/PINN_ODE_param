@@ -79,6 +79,32 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         return derivative_weight * derivative_loss + variable_loss
 
 
+def fOde(t, y, theta, eps=1e-12):
+    """
+    RHS f(t, y; theta) for the 5-state system.
+    y: array-like (5,) -> [S, Sd, R, SR, Rpp]
+    theta: dict with keys {'k1','k2','k3','k4','V','Km'} or a tuple in that order
+    returns dy/dt as np.ndarray (5,)
+    """
+    if isinstance(theta, dict):
+        k1, k2, k3, k4, V, Km = theta['k1'], theta['k2'], theta['k3'], theta['k4'], theta['V'], theta['Km']
+    else:
+        k1, k2, k3, k4, V, Km = theta  # assume tuple/list in this order
+
+    S, Sd, R, SR, Rpp = y
+
+    denom = Km + Rpp
+    denom = denom if denom > 0 else eps  # guard against division by zero
+
+    dS   = -k1*S - k2*S*R + k3*SR
+    dSd  =  k1*S
+    dR   = -k2*S*R + k3*SR + V*Rpp/denom
+    dSR  =  k2*S*R - k3*SR - k4*SR
+    dRpp =  k4*SR   - V*Rpp/denom
+
+    return np.array([dS, dSd, dR, dSR, dRpp], dtype=float)
+
+
 
 def main(args):
     ydataTruth = [[1, 0.588261834720057, 0.405587021811379,
@@ -107,7 +133,7 @@ def main(args):
                 0.297210421739746, 0.218936724748142, 0.103552056465885, 0.0410604925007539
                 ]]
     ydataTruth = np.array(ydataTruth).transpose()
-
+    theta_true = torch.tensor([0.07, 0.6,0.05,0.3,0.017,0.3])
     # run 100 simulations
     if args.true_sigma == 1e-2:
         sigma_cha = "001"
@@ -228,6 +254,23 @@ def main(args):
     np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
     
 
+    S, Sd, R, SR, Rpp = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t])
+    param_results = torch.cat([S, Sd, R, SR, Rpp], dim=1)  # (N,5)
+    
+    dt = estimate_t[1] - estimate_t[0]
+
+    val_term = np.sum((estimate_funcs - true_trajectory_100) ** 2) * dt
+    print("val_term_part:", val_term)
+    dX_hat = fOde(theta = param_results, x = estimate_funcs, tvec = estimate_t)
+    dtrue = fOde(theta= theta_true, x=true_trajectory_100, tvec=estimate_t)
+
+    der_term = np.sum((dX_hat  - dtrue) ** 2)* dt
+    print("der_term_part:", der_term)
+    h1_error = np.sqrt(val_term + der_term)
+    print("h1_part: ", h1_error)
+    print("h1_error: ", h1_error)
+    
+
     #======================================= with only ydata ==============================#=============================
     #model2 = BaseSolver(diff_eqs=ODESystem(),
     #                   net1=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
@@ -310,7 +353,22 @@ def main(args):
     print(f"trajectory_RMSE_100_after: {trajectory_RMSE_100}", flush=True)
     print(f"trajectory_RMSE_1000_after: {trajectory_RMSE_1000}", flush=True)
     
+    S, Sd, R, SR, Rpp = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t])
+    param_results = torch.cat([S, Sd, R, SR, Rpp], dim=1)  # (N,5)
     
+    dt = estimate_t[1] - estimate_t[0]
+
+    val_term = np.sum((estimate_funcs - true_trajectory_100) ** 2) * dt
+    print("val_term_part:", val_term)
+    dX_hat = fOde(theta = param_results, x = estimate_funcs, tvec = estimate_t)
+    dtrue = fOde(theta= theta_true, x=true_trajectory_100, tvec=estimate_t)
+
+    der_term = np.sum((dX_hat  - dtrue) ** 2)* dt
+    print("der_term_part:", der_term)
+    h1_error = np.sqrt(val_term + der_term)
+    print("h1_error: ", h1_error)
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", h1_error)
+
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
