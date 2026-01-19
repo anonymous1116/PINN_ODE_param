@@ -79,22 +79,31 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         return derivative_weight * derivative_loss + variable_loss
 
 
-def fOde(theta, x, t, eps=1e-12):
-    """
-    RHS f(t, y; theta) for the 5-state system.
-    y: array-like (5,) -> [S, Sd, R, SR, Rpp]
-    theta: dict with keys {'k1','k2','k3','k4','V','Km'} or a tuple in that order
-    returns dy/dt as np.ndarray (5,)
-    """
-    if isinstance(theta, dict):
-        k1, k2, k3, k4, V, Km = theta['k1'], theta['k2'], theta['k3'], theta['k4'], theta['V'], theta['Km']
-    else:
-        k1, k2, k3, k4, V, Km = theta  # assume tuple/list in this order
+import numpy as np
 
-    S, Sd, R, SR, Rpp = x
+def fOde(theta, x, tvec=None, eps=1e-12):
+    """
+    PTrans RHS f(x; theta) for 100 (or any) simulations in parallel.
+
+    Parameters
+    ----------
+    theta : array-like of length 6
+        [k1, k2, k3, k4, V, Km]
+    x : ndarray, shape (N, 5)
+        Columns = [S, Sd, R, SR, Rpp]
+    tvec : unused (kept for API symmetry with your FN version)
+    eps : small float to guard division by zero in Km + Rpp
+
+    Returns
+    -------
+    dxdt : ndarray, shape (N, 5)
+        [dS/dt, dSd/dt, dR/dt, dSR/dt, dRpp/dt]
+    """
+    k1, k2, k3, k4, V, Km = np.asarray(theta, dtype=float)
+    S, Sd, R, SR, Rpp = x[:, 0], x[:, 1], x[:, 2], x[:, 3], x[:, 4]
 
     denom = Km + Rpp
-    denom = denom if denom > 0 else eps  # guard against division by zero
+    denom = np.where(denom > 0.0, denom, eps)
 
     dS   = -k1*S - k2*S*R + k3*SR
     dSd  =  k1*S
@@ -102,7 +111,8 @@ def fOde(theta, x, t, eps=1e-12):
     dSR  =  k2*S*R - k3*SR - k4*SR
     dRpp =  k4*SR   - V*Rpp/denom
 
-    return np.array([dS, dSd, dR, dSR, dRpp], dtype=float)
+    return np.stack([dS, dSd, dR, dSR, dRpp], axis=1)
+
 
 
 
