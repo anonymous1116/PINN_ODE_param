@@ -277,7 +277,6 @@ def main(args):
     der_term = np.sum((dX_hat  - dtrue) ** 2)* dt
     print("der_term_part:", der_term)
     h1_error = np.sqrt(val_term + der_term)
-    print("h1_part: ", h1_error)
     print("h1_error: ", h1_error)
     
 
@@ -375,10 +374,11 @@ def main(args):
     dX_hat = fOde(theta = param_results, x = estimate_funcs, tvec = estimate_t)
     dtrue = fOde(theta= theta_true, x=true_trajectory_100, tvec=estimate_t)
 
-    der_term = torch.sum((dX_hat  - dtrue) ** 2)* dt
+    der_term = np.sum((dX_hat  - dtrue) ** 2)* dt
     print("der_term_part:", der_term)
     h1_error = np.sqrt(val_term + der_term)
     print("h1_error: ", h1_error)
+    
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", h1_error)
 
 
