@@ -259,7 +259,7 @@ def main(args):
     
     dt = estimate_t[1] - estimate_t[0]
 
-    val_term = np.sum((estimate_funcs - true_trajectory_100) ** 2) * dt
+    val_term = np.sum((estimate_funcs - true_trajectory_100.numpy()) ** 2) * dt
     print("val_term_part:", val_term)
     dX_hat = fOde(theta = param_results, x = estimate_funcs, tvec = estimate_t)
     dtrue = fOde(theta= theta_true, x=true_trajectory_100, tvec=estimate_t)
