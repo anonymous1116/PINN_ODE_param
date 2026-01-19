@@ -255,7 +255,7 @@ def main(args):
     
     best_model.eval()
     k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
-    param_results = torch.cat([k1, k2, k3, k4, V, Km], dim=1)  # (N,5)
+    param_results = torch.tensor([k1, k2, k3, k4, V, Km])  # (N,5)
     
     dt = estimate_t[1] - estimate_t[0]
 
@@ -356,7 +356,7 @@ def main(args):
     
     best_model.eval()
     k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
-    param_results = torch.cat([k1, k2, k3, k4, V, Km], dim=1)  # (N,5)
+    param_results = torch.tensor([k1, k2, k3, k4, V, Km])  # (N,5)
     
     dt = estimate_t[1] - estimate_t[0]
 
