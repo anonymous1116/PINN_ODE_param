@@ -183,7 +183,7 @@ def main(args):
                 variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
                 batch_y=true_y[variable_batch_id],  # [7, 2]
                 derivative_weight=0.0 if epoch < train_epochs/10 else args.penalty)
-            )
+            
             batch_loss.backward()
             epoch_loss += batch_loss.item()
             if i % 100 == 0:
