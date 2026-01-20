@@ -109,9 +109,7 @@ def main(args):
     true_x0 = [-1, 1]
     true_sigma = [args.true_sigma, args.true_sigma]
     sci_str = format(args.true_sigma, ".0e")
-    penalty = format(args.penalty, ".0e")
-    
-    print("sigma: ", sci_str, "penalty: ", penalty)
+    print(sci_str)
     n = 41
     tvecObs = np.linspace(0, 20, num=n)
     sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
@@ -138,10 +136,17 @@ def main(args):
     ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
     ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
 
-    output_dir = f"../depot_hyun/hyun/ODE_param/FN_sig{sci_str}/lambda_{penalty}"
+    output_dir = f"../depot_hyun/hyun/ODE_param/FN_sig{sci_str}"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
+    
+    np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
+    if s == 1:
+        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull) #Full Trajectory
+        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth) # Trajectory within observed time
+        np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind) 
+        print("ydataTruthFull, ydataTruth, observed_ind saved", flush=True)    
     
     t = torch.linspace(0., 20., n)  # torch.float32
     true_y = torch.from_numpy(ydata)  # torch.float64
@@ -165,6 +170,7 @@ def main(args):
     #            patience=3000,
     #            min_lr=1e-6
     #            )
+
     
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
@@ -182,8 +188,7 @@ def main(args):
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
                 variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
                 batch_y=true_y[variable_batch_id],  # [7, 2]
-                derivative_weight=0.0 if epoch < train_epochs/10 else args.penalty)
-            )
+                derivative_weight=0.0 if epoch < train_epochs/10 else 0.8)
             batch_loss.backward()
             epoch_loss += batch_loss.item()
             if i % 100 == 0:
@@ -195,6 +200,7 @@ def main(args):
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
+
 
     # check estimated parameters
     best_model.eval()
@@ -220,21 +226,26 @@ def main(args):
     der_term = np.sum((tmp  - dtrue) ** 2)* dt
     print("der_term_part:", der_term)
     h1_part = np.sqrt(val_term + der_term)
-    print("H1: ", h1_part)
-    dt = estimate_t[1] - estimate_t[0]
+    print("h1_part: ", h1_part)
     
 
-    CV_term = np.sqrt(np.sum((estimate_funcs[observed_ind, :] - ydata) ** 2))
+    dt = estimate_t[1] - estimate_t[0]
+
+    val_term = np.sum((estimate_funcs[:, :] - ydataTruthFull[:, :]) ** 2) * dt
+    print("val_term_full:", val_term)
+    tmp = fOde(theta = param_results, x = estimate_funcs[:,:], tvec = estimate_t)
+    dtrue = fOde(theta = true_theta, x = ydataTruthFull, tvec = estimate_t)
+    der_term = np.sum((tmp  - dtrue) ** 2)* dt
+    print("der_term_full:", der_term)
+    h1_full = np.sqrt(val_term + der_term).tolist()
+    print("h1_full: ", h1_full)
     
-    print(f"Simulation {s} completed")
+    
+    print(f"Simulation {s} finished")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
-    np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_term))
-    
-    print(f"Simulation {s} saved completed")
-    
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array([h1_part,h1_full]))
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
@@ -242,8 +253,6 @@ def get_args():
                         help = "See number (default: 1)")
     parser.add_argument("--true_sigma", type = float, default = 0.2,
                         help = "observation errors (default: 0.2)")
-    parser.add_argument("--penalty", type = float, default = 0.8,
-                        help = "observation errors (default: 0.8)")
     return parser.parse_args()
 
 if __name__ == "__main__":
