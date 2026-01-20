@@ -143,7 +143,6 @@ def main(args):
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
     
-    
     t = torch.linspace(0., 20., n)  # torch.float32
     true_y = torch.from_numpy(ydata)  # torch.float64
     t_min = 0.0
@@ -166,7 +165,6 @@ def main(args):
     #            patience=3000,
     #            min_lr=1e-6
     #            )
-
     
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
@@ -197,7 +195,6 @@ def main(args):
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
 
-
     # check estimated parameters
     best_model.eval()
     param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
@@ -222,26 +219,23 @@ def main(args):
     der_term = np.sum((tmp  - dtrue) ** 2)* dt
     print("der_term_part:", der_term)
     h1_part = np.sqrt(val_term + der_term)
-    print("h1_part: ", h1_part)
-    
-
+    print("H1: ", h1_part)
     dt = estimate_t[1] - estimate_t[0]
+    
 
-    val_term = np.sum((estimate_funcs[:, :] - ydataTruthFull[:, :]) ** 2) * dt
-    print("val_term_full:", val_term)
-    tmp = fOde(theta = param_results, x = estimate_funcs[:,:], tvec = estimate_t)
-    dtrue = fOde(theta = true_theta, x = ydataTruthFull, tvec = estimate_t)
-    der_term = np.sum((tmp  - dtrue) ** 2)* dt
-    print("der_term_full:", der_term)
-    h1_full = np.sqrt(val_term + der_term).tolist()
-    print("h1_full: ", h1_full)
-    
-    
-    print(f"Simulation {s} finished")
+    CV_term = np.sqrt(np.sum((estimate_funcs[observed_ind, :] - ydata) ** 2))
+        
+
+
+    print(f"Simulation {s} completed")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array([h1_part,h1_full]))
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
+    np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_term))
+    
+    print(f"Simulation {s} saved completed")
+    
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
