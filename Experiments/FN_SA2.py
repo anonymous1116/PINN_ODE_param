@@ -3,97 +3,72 @@ import torch
 import torch.nn as nn
 import pandas as pd
 import argparse
-import os,sys
+import os
 import time
 from abc import ABC
-import copy
 from scipy.integrate import solve_ivp
-from networks import SinActv
 from solvers_utils import PretrainedSolver
+from networks import FCNN, SinActv
 from generators import SamplerGenerator, Generator1D
 from neurodiffeq import safe_diff as diff
-from warnings import warn
-
-
-class SharedFCNN(nn.Module):
-    def __init__(self, n_input_units=1, n_output_units=2, hidden_units=[64, 64], actv=nn.Tanh):
-        super().__init__()
-
-        layers = []
-        prev_units = n_input_units
-        for h in hidden_units:
-            layers.append(nn.Linear(prev_units, h))
-            layers.append(actv())
-            prev_units = h
-
-        layers.append(nn.Linear(prev_units, n_output_units))
-        self.net = nn.Sequential(*layers)
-
-    def forward(self, t):
-        return self.net(t)   # output shape: [batch, 2]
-
+from utils import h1_error_trajectory
 
 class ODESystem(nn.Module):
     def __init__(self):
         super().__init__()
-        # parameters to estimate
         self.a = nn.Parameter(torch.tensor(0.5))
         self.b = nn.Parameter(torch.tensor(0.5))
         self.c = nn.Parameter(torch.tensor(0.5))
         self.V0 = nn.Parameter(torch.tensor(-1.))
         self.R0 = nn.Parameter(torch.tensor(1.))
+        # self.V0 = torch.tensor(-1.)
+        # self.R0 = torch.tensor(1.)
+        self.initial_conditions = [self.V0, self.R0]
 
     def compute_derivative(self, V, R, t):
-        """V, R, t: [batch, 1]"""
-        dVdt = diff(V, t) - self.c * (V - V ** 3 / 3 + R)
-        dRdt = diff(R, t) + (V - self.a + self.b * R) / self.c
-        return [dVdt, dRdt]
+        """v.shape = [batch, 1]
+        t.shape = [batch, 1]
+        """
+        return [diff(V, t) - self.c * (V - V ** 3 / 3 + R), diff(R, t) + (V - self.a + self.b * R) / self.c]
 
-    def compute_func_val(self, net, t_list):
-        """
-        net: shared network, R -> (V,R)
-        t_list: list([batch, 1]) as in your original code
-        returns: [V(t), R(t)], each [batch, 1]
-        """
+    def compute_func_val(self, nets, derivative_batch_t):
         t_0 = 0.0
-        t = torch.cat(t_list, dim=1)        # [batch, 1]
-        network_output = net(t)             # [batch, 2]
+        rslt = []
+        for idx, net in enumerate(nets):
+            u_0 = self.initial_conditions[idx]
+            network_output = net(torch.cat(derivative_batch_t, dim=1))
+            new_network_output = u_0 + (1 - torch.exp(-torch.cat(derivative_batch_t, dim=1) + t_0)) * network_output
+            rslt.append(new_network_output)
+        return rslt
 
-        V_raw = network_output[:, 0:1]      # [batch, 1]
-        R_raw = network_output[:, 1:2]      # [batch, 1]
-
-        # same modulation as your original code
-        factor = (1 - torch.exp(-(t - t_0)))  # [batch, 1]
-
-        V = self.V0 + factor * V_raw
-        R = self.R0 + factor * R_raw
-        return [V, R]
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
-    def __init__(self, diff_eqs, net):
+    def __init__(self, diff_eqs, net1, net2):
         super().__init__()
         self.diff_eqs = diff_eqs
-        self.net = net
+        self.net1 = net1
+        self.net2 = net2
+        self.nets = [net1, net2]
 
     def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5):
+        """derivative_batch_t can be sampled in any distribution and sample size.
+        derivative_batch_t= list([derivative_batch_size, 1])
         """
-        derivative_batch_t: list([derivative_batch_size, 1])
-        variable_batch_t:   list([variable_batch_size, 1])
-        batch_y:            [variable_batch_size, 2]
-        """
-
-        # ----- physics / derivative loss -----
-        derivative_funcs = self.diff_eqs.compute_func_val(self.net, derivative_batch_t)
+        derivative_loss = 0.0
+        derivative_funcs = self.diff_eqs.compute_func_val(self.nets, derivative_batch_t)
         derivative_residuals = self.diff_eqs.compute_derivative(*derivative_funcs,
                                                                 *derivative_batch_t)
-        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [batch, 2]
-        derivative_loss = (derivative_residuals ** 2).mean()
+        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
+        derivative_loss += (derivative_residuals ** 2).mean()
 
-        # ----- data / variable loss -----
-        variable_funcs = self.diff_eqs.compute_func_val(self.net, variable_batch_t)
-        variable_funcs = torch.cat(variable_funcs, dim=1)  # [batch, 2]
-        variable_loss = ((variable_funcs - batch_y) ** 2).mean()
-
+        """(variable_batch_t, batch_y) is sampled from data
+         variable_batch_t =list([variable_batch_size, 1])
+        batch_y.shape = [variable_batch_size, 1]
+        """
+        variable_loss = 0.0
+        variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
+        variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
+        variable_loss += ((variable_funcs - batch_y) ** 2).mean()
         return derivative_weight * derivative_loss + variable_loss
 
 
@@ -134,9 +109,9 @@ def main(args):
     true_x0 = [-1, 1]
     true_sigma = [args.true_sigma, args.true_sigma]
     sci_str = format(args.true_sigma, ".0e")
-    print(sci_str)
+    penalty = format(args.penalty, ".0e")
     
-    
+    print("sigma: ", sci_str, "penalty: ", penalty)
     n = 41
     tvecObs = np.linspace(0, 20, num=n)
     sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
@@ -154,8 +129,6 @@ def main(args):
     SEED = torch.tensor(data=SEED.values, dtype=torch.int)
     
     observed_ind = np.linspace(0, 2000, num=41, dtype=int)
-    #observed_ind = np.concatenate((observed_ind, np.array([1100, 1200, 1300, 1400, 1500, 1700, 2000])))
-
 
     s = args.seed
 
@@ -165,17 +138,11 @@ def main(args):
     ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
     ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
 
-    output_dir = f"../depot_hyun/hyun/ODE_param/FN_SA_sig{sci_str}"
+    output_dir = f"../depot_hyun/hyun/ODE_param/FN_sig{sci_str}/lambda_{penalty}"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
     
-    np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
-    if s == 1:
-        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull)
-        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth)
-        np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind)
-        print("ydataTruthFull, ydataTruth, observed_ind saved", flush=True)    
     
     t = torch.linspace(0., 20., n)  # torch.float32
     true_y = torch.from_numpy(ydata)  # torch.float64
@@ -185,31 +152,25 @@ def main(args):
     derivative_batch_size = 100
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
-    
-    shared_net = SharedFCNN(
-    n_input_units=1,
-    n_output_units=2,          # <--- now outputs (V, R)
-    hidden_units=[64, 64],
-    actv=SinActv
-    )
-    ode_system = ODESystem()
-    model = BaseSolver(diff_eqs=ode_system, net=shared_net)
-
-    # clone for best_model
-    best_shared_net = SharedFCNN(
-        n_input_units=1,
-        n_output_units=2,
-        hidden_units=[64, 64],
-        actv=SinActv
-    )
-    best_ode_system = ODESystem()
-    best_model = BaseSolver(diff_eqs=best_ode_system, net=best_shared_net)
-
+    model = BaseSolver(diff_eqs=ODESystem(),
+                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
+                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
+    best_model = BaseSolver(diff_eqs=ODESystem(),
+                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
+                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
+    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #            optimizer,
+    #            mode="min",
+    #            factor=0.5,
+    #            patience=3000,
+    #            min_lr=1e-6
+    #            )
+
+    
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
     loss_history = []
-    best_loss = float('inf')
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
         epoch_loss = 0.0
@@ -223,36 +184,64 @@ def main(args):
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
                 variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
                 batch_y=true_y[variable_batch_id],  # [7, 2]
-                derivative_weight=0.8)
+                derivative_weight=args.penalty)
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-            if epoch % 100 == 0:
+            if i % 100 == 0:
                 print(f'Train Epoch: {epoch} '
                     f'[{i:05}/{n} '
                     f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
+        #scheduler.step(batch_loss)
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
 
+
     # check estimated parameters
-    with torch.no_grad():
-        param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
+    best_model.eval()
+    param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
 
     # check estimated path
     with torch.no_grad():
         estimate_t = torch.linspace(0., 20., 2001)
-        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.net, [estimate_t.view(-1, 1)])
+        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
-        estimate_funcs = estimate_funcs.numpy()
+    estimate_funcs = estimate_funcs.numpy()
+    #trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
+    #                                        axis=0))
     trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
                                             axis=0))
+    
+    dt = tvecObs[1] - tvecObs[0]
+
+    val_term = np.sum((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2) * dt
+    print("val_term_part:", val_term)
+    tmp = fOde(theta = param_results, x = estimate_funcs[observed_ind,:], tvec = tvecObs)
+    dtrue = fOde(theta = true_theta, x = ydataTruth, tvec = estimate_t)
+    der_term = np.sum((tmp  - dtrue) ** 2)* dt
+    print("der_term_part:", der_term)
+    h1_part = np.sqrt(val_term + der_term)
+    print("h1_part: ", h1_part)
+    
+
+    dt = estimate_t[1] - estimate_t[0]
+
+    val_term = np.sum((estimate_funcs[:, :] - ydataTruthFull[:, :]) ** 2) * dt
+    print("val_term_full:", val_term)
+    tmp = fOde(theta = param_results, x = estimate_funcs[:,:], tvec = estimate_t)
+    dtrue = fOde(theta = true_theta, x = ydataTruthFull, tvec = estimate_t)
+    der_term = np.sum((tmp  - dtrue) ** 2)* dt
+    print("der_term_full:", der_term)
+    h1_full = np.sqrt(val_term + der_term).tolist()
+    print("h1_full: ", h1_full)
+    
+    
     print(f"Simulation {s} finished")
-    print(estimate_funcs)
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array([h1_part,h1_full]))
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
@@ -261,7 +250,6 @@ def get_args():
     parser.add_argument("--true_sigma", type = float, default = 0.2,
                         help = "observation errors (default: 0.2)")
     return parser.parse_args()
-
 
 if __name__ == "__main__":
     args = get_args()
