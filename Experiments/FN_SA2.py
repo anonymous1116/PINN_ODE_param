@@ -224,9 +224,7 @@ def main(args):
     
 
     CV_term = np.sqrt(np.sum((estimate_funcs[observed_ind, :] - ydata) ** 2))
-        
-
-
+    
     print(f"Simulation {s} completed")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)

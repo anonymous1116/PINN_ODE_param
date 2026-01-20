@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 #SBATCH --partition=cpu
 #SBATCH --account=statdept
 #SBATCH --time=01:00:00
@@ -24,7 +24,7 @@ cd $SLURM_SUBMIT_DIR
 seed=$((SLURM_ARRAY_TASK_ID))
 
 #python ./Experiments/FN_SA.py --seed $seed --true_sigma 2e-1
-python ./Experiments/FN_SA2.py --seed $seed --true_sigma 2e-1
+python ./Experiments/FN_SA2.py --seed $seed --true_sigma 2e-1 --penalty 2e+00
 #python ./Experiments/PTrans2.py --seed $seed --true_sigma 1e-3
 #python ./Experiments/PTrans_base.py --seed $seed --true_sigma 1e-3
 #python ./Experiments/PTrans_base.py --seed $seed --true_sigma 1e-2
