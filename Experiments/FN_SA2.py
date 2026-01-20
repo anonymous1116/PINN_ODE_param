@@ -195,7 +195,7 @@ def main(args):
         #scheduler.step(batch_loss)
         loss_history.append(epoch_loss)
         if epoch >= num_pilot:
-            if loss_history[-1] == min(loss_history[num_pilot:]):
+            if loss_history[-1] == min(loss_history[int(num_pilot):]):
                 best_model.load_state_dict(model.state_dict())
 
     # check estimated parameters
