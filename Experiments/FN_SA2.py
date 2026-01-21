@@ -169,7 +169,7 @@ def main(args):
     y_ind = np.arange(n)
     train_epochs = 15000  # 10000
     loss_history = []
-    num_pilot = train_epochs/10
+    #num_pilot = train_epochs/10
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
         epoch_loss = 0.0
@@ -183,7 +183,7 @@ def main(args):
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
                 variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
                 batch_y=true_y[variable_batch_id],  # [7, 2]
-                derivative_weight=0.0 if epoch < num_pilot else args.penalty)
+                derivative_weight=args.penalty)
             
             batch_loss.backward()
             epoch_loss += batch_loss.item()
@@ -194,9 +194,8 @@ def main(args):
         optimizer.step()
         #scheduler.step(batch_loss)
         loss_history.append(epoch_loss)
-        if epoch >= num_pilot:
-            if loss_history[-1] == min(loss_history[int(num_pilot):]):
-                best_model.load_state_dict(model.state_dict())
+        if loss_history[-1] == min(loss_history):
+            best_model.load_state_dict(model.state_dict())
 
     # check estimated parameters
     best_model.eval()

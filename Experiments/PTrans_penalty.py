@@ -209,7 +209,7 @@ def main(args):
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
                 variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
                 batch_y=true_y[variable_batch_id],  # [10, 5]
-                derivative_weight=0.07)  # 0.05
+                derivative_weight=args.penalty)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
         if epoch % 100 == 0:
@@ -249,8 +249,9 @@ def main(args):
 
     # save
     sci_str = format(args.true_sigma, ".0e")
+    penalty = format(args.penalty, ".0e")
     
-    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_base_{sci_str}"
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_{sci_str}_penalty_{penalty}"
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
     print(f"Simulation {s} finished")
@@ -312,7 +313,7 @@ def main(args):
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
                 variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)], 
                 batch_y=torch.from_numpy(ydata)[variable_batch_id],  # [10, 5]
-                derivative_weight=0.07)  # 0.05
+                derivative_weight=args.penalty)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
             #if i % 100 == 0:
@@ -389,6 +390,8 @@ def get_args():
                         help = "See number (default: 1)")
     parser.add_argument("--true_sigma", type = float, default = 0.01,
                         help = "observation errors (default: 0.01)")
+    parser.add_argument("--penalty", type = float, default = 0.07,
+                        help = "observation errors (default: 0.07)")
     return parser.parse_args()
 
 if __name__ == "__main__":
