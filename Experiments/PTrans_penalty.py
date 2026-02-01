@@ -175,11 +175,15 @@ def main(args):
     os.makedirs(f"{output_dir}/results", exist_ok=True)
 
     ydata = ydataTruth + np.random.normal(0, args.true_sigma, ydataTruth.shape)  # [15, 5]
+    np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
+    
     ydataFull = np.zeros((n, 5))
     for j in range(5):
         ydataFull[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])  # [101, 5]
     t = torch.linspace(0., 100., n)  # torch.float32
     true_y = torch.from_numpy(ydataFull)  # torch.float64
+    
+    
     t_min = 0.0
     t_max = 100.0
     variable_batch_size = 10
@@ -286,7 +290,6 @@ def main(args):
     print("der_term_part:", der_term)
     h1_error = np.sqrt(val_term + der_term)
     print("h1_error: ", h1_error)
-    
 
     #======================================= with only ydata ==============================#=============================
     #model2 = BaseSolver(diff_eqs=ODESystem(),
@@ -374,7 +377,7 @@ def main(args):
     best_model.eval()
     k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
     param_results = torch.tensor([k1, k2, k3, k4, V, Km])  # (N,5)
-    
+    print("param_results", param_results)
     dt = estimate_t[1] - estimate_t[0]
 
     val_term = np.sum((estimate_funcs - true_trajectory_100.numpy()) ** 2) * dt
@@ -388,6 +391,9 @@ def main(args):
     print("h1_error: ", h1_error)
     
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", h1_error)
+    np.save(f"{output_dir}/results/param_results{s}.npy", param_results)
+    
+    
 
 
 def get_args():
