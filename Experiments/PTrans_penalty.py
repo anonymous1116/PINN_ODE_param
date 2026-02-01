@@ -147,7 +147,7 @@ def main(args):
     # run 100 simulations
     if args.true_sigma == 1e-2:
         sigma_cha = "001"
-    elif args.true_sigma == 1e-3:
+    else:
         sigma_cha = "0001"     
     #else:
     #    sigma_cha = "001"
@@ -163,11 +163,17 @@ def main(args):
     trajectory_RMSE = np.zeros((100, 5))
     trajectory = np.zeros((100, n, 5))
 
-
     s = args.seed
 
     np.random.seed(SEED[s, 0].data)
     torch.manual_seed(SEED[s, 0].data)
+
+    sci_str = format(args.true_sigma, ".0e")
+    
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}"
+    os.makedirs(f"{output_dir}/ydata", exist_ok=True)
+    os.makedirs(f"{output_dir}/results", exist_ok=True)
+
     ydata = ydataTruth + np.random.normal(0, args.true_sigma, ydataTruth.shape)  # [15, 5]
     ydataFull = np.zeros((n, 5))
     for j in range(5):

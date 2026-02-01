@@ -79,8 +79,6 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         return derivative_weight * derivative_loss + variable_loss
 
 
-import numpy as np
-
 def fOde(theta, x, tvec=None, eps=1e-12):
     """
     PTrans RHS f(x; theta) for 100 (or any) simulations in parallel.
@@ -114,8 +112,6 @@ def fOde(theta, x, tvec=None, eps=1e-12):
     return np.stack([dS, dSd, dR, dSR, dRpp], axis=1)
 
 
-
-
 def main(args):
     ydataTruth = [[1, 0.588261834720057, 0.405587021811379,
                 0.233954596382738, 0.185824926227245, 0.121529475508475, 0.0660579216704765,
@@ -147,7 +143,7 @@ def main(args):
     # run 100 simulations
     if args.true_sigma == 1e-2:
         sigma_cha = "001"
-    elif args.true_sigma == 1e-3:
+    else:
         sigma_cha = "0001"     
     #else:
     #    sigma_cha = "001"
@@ -168,10 +164,33 @@ def main(args):
 
     np.random.seed(SEED[s, 0].data)
     torch.manual_seed(SEED[s, 0].data)
+
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}"
+    os.makedirs(f"{output_dir}/ydata", exist_ok=True)
+    os.makedirs(f"{output_dir}/results", exist_ok=True)
+    sci_str = format(args.true_sigma, ".0e")
+    
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}"
+    os.makedirs(f"{output_dir}/ydata", exist_ok=True)
+    os.makedirs(f"{output_dir}/results", exist_ok=True)
+
     ydata = ydataTruth + np.random.normal(0, args.true_sigma, ydataTruth.shape)  # [15, 5]
     ydataFull = np.zeros((n, 5))
     for j in range(5):
         ydataFull[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])  # [101, 5]
+    t = torch.linspace(0., 100., n)  # torch.float32
+    true_y = torch.from_numpy(ydataFull)  # torch.float64
+    
+    
+    np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
+    if s == 1:
+        np.save(f"{output_dir}/ydata/ydataTruthFull.npy", ydataTruthFull) #Full Trajectory
+        np.save(f"{output_dir}/ydata/ydataTruth.npy", ydataTruth) 
+        #np.save(f"{output_dir}/ydata/observed_ind.npy", observed_ind)
+        print("ydataTruthFull, ydataTruth saved", flush=True)    
+    
+    
+    
     t = torch.linspace(0., 100., n)  # torch.float32
     true_y = torch.from_numpy(ydataFull)  # torch.float64
     t_min = 0.0

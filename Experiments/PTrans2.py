@@ -145,10 +145,6 @@ def main(args):
     t = torch.linspace(0., 100., n)  # torch.float32
     true_y = torch.from_numpy(ydataFull)  # torch.float64
 
-    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}"
-    os.makedirs(f"{output_dir}/ydata", exist_ok=True)
-    os.makedirs(f"{output_dir}/results", exist_ok=True)
-    
     
     np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
     if s == 1:
