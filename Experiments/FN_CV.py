@@ -134,10 +134,9 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
             
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-            if i % 100 == 0:
-                print(f'Train Epoch: {epoch} '
-                    f'[{i:05}/{len(y_ind)} '
-                    f'\tLoss: {batch_loss.item():.6f}')
+        if epoch % 100 == 0:
+            print(f'Train Epoch: {epoch} '
+                f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
         #scheduler.step(batch_loss)
         loss_history.append(epoch_loss)
@@ -154,7 +153,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
 
-    CV_error = np.mean((estimate_funcs[val_idx,:] - obs_val) ** 2, axis =0 )
+    CV_error = np.mean((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2, axis =0 )
     return CV_error
 
 def main(args):
@@ -216,6 +215,9 @@ def main(args):
     CV_error_list = []
     for penalty in penalty_list:
         CV_error = 0
+
+        print(f"penalty: {penalty}, ")
+
         for train_idx, val_idx in kfold.split(true_y):
             CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 15000)
         CV_error_list.append(CV_error)
@@ -299,6 +301,7 @@ def main(args):
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
     np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_error_list))
+    np.save(f"{output_dir}/results/lambda_{s}.npy", penalty_CV)
     
     print(f"Simulation {s} saved completed")
     
