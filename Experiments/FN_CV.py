@@ -113,7 +113,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
     obs_val = obs[val_idx]
     loss_history = []
 
-    time_train = t[obs]
+    time_train = t[train_idx]
 
     # adfasdfasfdfdf 
     for epoch in range(train_epochs):
