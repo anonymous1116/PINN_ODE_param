@@ -105,14 +105,17 @@ def fOdeDtheta(theta, x, tvec):
 
 
 def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 15000):
-    model_copy = copy(model)
-    best_model_copy = copy(model)
+    model_copy = copy.copy(model)
+    best_model_copy = copy.copy(model)
     optimizer = torch.optim.Adam(model_copy.parameters(), lr=5e-3)
     y_ind = np.arange(len(train_idx))
     obs_train = obs[train_idx]
     obs_val = obs[val_idx]
     loss_history = []
 
+    time_train = t[obs]
+
+    # adfasdfasfdfdf 
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
         epoch_loss = 0.0
@@ -124,7 +127,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
             # optimizer.zero_grad()
             batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
+                variable_batch_t=[time_train[variable_batch_id].view(-1, 1)],  # list([7, 1])
                 batch_y=obs_train[variable_batch_id],  # [7, 2]
                 derivative_weight=penalty
                 )
