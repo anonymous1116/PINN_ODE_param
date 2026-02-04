@@ -211,7 +211,6 @@ def main(args):
 
     k_folds = 5
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
-    CV_error = 0
     penalty_list = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
     CV_error_list = []
     for penalty in penalty_list:
@@ -293,14 +292,12 @@ def main(args):
     dt = estimate_t[1] - estimate_t[0]
     
 
-    CV_term = np.sqrt(np.sum((estimate_funcs[observed_ind, :] - ydata) ** 2))
-    
     print(f"Simulation {s} completed")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
-    np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_term))
+    np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_error_list))
     
     print(f"Simulation {s} saved completed")
     
