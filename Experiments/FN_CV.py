@@ -160,7 +160,6 @@ def main(args):
     true_sigma = [args.true_sigma, args.true_sigma]
     sci_str = format(args.true_sigma, ".0e")
     
-    
     n = 41
     tvecObs = np.linspace(0, 20, num=n)
     sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
@@ -215,7 +214,7 @@ def main(args):
     for penalty in penalty_list:
         CV_error = 0
         for train_idx, val_idx in kfold.split(true_y):
-            CV_error += FN_CV(penalty, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 15000)
+            CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 15000)
         CV_error_list.append(CV_error)
     
     CV_error_list = np.array(CV_error_list)
