@@ -125,7 +125,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         for i in range(0, len(y_ind), variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
             # optimizer.zero_grad()
-            batch_loss = model.compute_loss(
+            batch_loss = model_copy.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
                 variable_batch_t=[time_train[variable_batch_id].view(-1, 1)],  # list([7, 1])
                 batch_y=obs_train[variable_batch_id],  # [7, 2]
@@ -141,7 +141,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         #scheduler.step(batch_loss)
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
-            best_model_copy.load_state_dict(model.state_dict())
+            best_model_copy.load_state_dict(model_copy.state_dict())
 
     # check estimated path
     best_model_copy.eval()
