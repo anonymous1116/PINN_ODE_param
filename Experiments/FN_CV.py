@@ -159,9 +159,8 @@ def main(args):
     true_x0 = [-1, 1]
     true_sigma = [args.true_sigma, args.true_sigma]
     sci_str = format(args.true_sigma, ".0e")
-    penalty = format(args.penalty, ".0e")
     
-    print("sigma: ", sci_str, "penalty: ", penalty)
+    
     n = 41
     tvecObs = np.linspace(0, 20, num=n)
     sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
@@ -308,8 +307,6 @@ def get_args():
                         help = "See number (default: 1)")
     parser.add_argument("--true_sigma", type = float, default = 0.2,
                         help = "observation errors (default: 0.2)")
-    parser.add_argument("--penalty", type = float, default = 0.8,
-                        help = "observation errors (default: 0.8)")
     return parser.parse_args()
 
 if __name__ == "__main__":
