@@ -187,10 +187,9 @@ def main(args):
             
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-            if i % 100 == 0:
-                print(f'Train Epoch: {epoch} '
-                    f'[{i:05}/{n} '
-                    f'\tLoss: {batch_loss.item():.6f}')
+        if epoch % 100 == 0:
+            print(f'Train Epoch: {epoch} '
+                f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
         #scheduler.step(batch_loss)
         loss_history.append(epoch_loss)

@@ -104,7 +104,7 @@ def fOdeDtheta(theta, x, tvec):
     return resultDtheta
 
 
-def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 15000):
+def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000):
     model_copy = copy.copy(model)
     best_model_copy = copy.copy(model)
     optimizer = torch.optim.Adam(model_copy.parameters(), lr=5e-3)
@@ -219,7 +219,7 @@ def main(args):
         print(f"penalty: {penalty}, ")
 
         for train_idx, val_idx in kfold.split(true_y):
-            CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 15000)
+            CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
         CV_error_list.append(CV_error)
     
     CV_error_list = np.array(CV_error_list)
