@@ -215,11 +215,11 @@ def main(args):
     CV_error_list = []
     for penalty in penalty_list:
         CV_error = 0
-
-        print(f"penalty: {penalty}, ")
-
+        num = 0
         for train_idx, val_idx in kfold.split(true_y):
+            print(f"penalty: {penalty}, CV: {num}/{kfold}")
             CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
+            num+=1
         CV_error_list.append(CV_error)
     
     CV_error_list = np.array(CV_error_list)
