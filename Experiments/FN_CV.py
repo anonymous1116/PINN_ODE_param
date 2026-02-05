@@ -154,6 +154,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
     estimate_funcs = estimate_funcs.numpy()
 
     CV_error = np.mean((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2, axis =0 )
+    del model_copy, best_model_copy
     return CV_error
 
 def main(args):
@@ -218,7 +219,7 @@ def main(args):
         num = 0
         for train_idx, val_idx in kfold.split(true_y):
             print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += FN_CV(penalty, true_y, t, copy.copy(model), train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 5000)
+            CV_error += FN_CV(penalty, true_y, t, copy.copy(model), train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 300)
             num+=1
         print("CV_error: ", CV_error)
         CV_error_list.append(CV_error)
