@@ -120,7 +120,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         np.random.shuffle(y_ind)
         epoch_loss = 0.0
         batch_loss = 0.0
-        # model.train()
+        model_copy.train()
         optimizer.zero_grad()
         for i in range(0, len(y_ind), variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
@@ -217,9 +217,10 @@ def main(args):
         CV_error = 0
         num = 0
         for train_idx, val_idx in kfold.split(true_y):
-            print(f"penalty: {penalty}, CV: {num}/{kfold}")
-            CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 5000)
+            print(f"penalty: {penalty}, CV: {num}/{k_folds}")
+            CV_error += FN_CV(penalty, true_y, t, copy.copy(model), train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 5000)
             num+=1
+        print("CV_error: ", CV_error)
         CV_error_list.append(CV_error)
     
     CV_error_list = np.array(CV_error_list)
