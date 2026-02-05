@@ -219,7 +219,9 @@ def main(args):
         num = 0
         for train_idx, val_idx in kfold.split(true_y):
             print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += FN_CV(penalty, true_y, t, copy.copy(model), train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 300)
+            model_copy  = copy.copy(model)
+            CV_error += FN_CV(penalty, true_y, t, model_copy, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 1000)
+            del model_copy
             num+=1
         print("CV_error: ", CV_error)
         CV_error_list.append(CV_error)
