@@ -214,6 +214,8 @@ def main(args):
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
     penalty_list = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
     CV_error_list = []
+    start_time = time.time()
+    cumulative_time = 0
     for penalty in penalty_list:
         CV_error = 0
         num = 0
@@ -221,6 +223,9 @@ def main(args):
             print(f"penalty: {penalty}, CV: {num}/{k_folds}")
             CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 1000)
             num+=1
+            end_time = time.time()
+            cumulative_time+= end_time-start_time
+            print("cumulative time: ", cumulative_time)
         print("CV_error: ", CV_error)
         CV_error_list.append(CV_error)
     
