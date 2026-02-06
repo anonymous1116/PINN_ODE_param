@@ -232,6 +232,7 @@ def main(args):
     CV_error_list = np.array(CV_error_list)
 
     penalty_CV = CV_error_list[np.argmin(CV_error_list)]
+    print(penalty_CV)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
