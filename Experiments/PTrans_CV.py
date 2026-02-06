@@ -2,12 +2,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 import pandas as pd
-import copy
+import copy, time
 from abc import ABC
 from solvers_utils import PretrainedSolver
 from networks import FCNN
 from generators import SamplerGenerator, Generator1D
 from neurodiffeq import safe_diff as diff
+from sklearn.model_selection import KFold
+
 import argparse, os
 
 
@@ -114,7 +116,7 @@ def fOde(theta, x, tvec=None, eps=1e-12):
 
 
 
-def PTrans_pretrain(penalty, extended_obs, t, model, train_generator, variable_batch_size, train_epochs = 5000):
+def PTrans_pretrain(penalty, extended_obs, t, model, train_generator, variable_batch_size=10, train_epochs = 5000):
     model_copy = copy.deepcopy(model)
     best_model_copy = copy.deepcopy(model)
     optimizer = torch.optim.Adam(model_copy.parameters(), lr=9e-3)
@@ -147,10 +149,10 @@ def PTrans_pretrain(penalty, extended_obs, t, model, train_generator, variable_b
         if loss_history[-1] == min(loss_history):
             best_model_copy.load_state_dict(model_copy.state_dict())
 
-    return best_model_copy
+    return best_model_copy.state_dict()
     
 
-def PTrans_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000):
+def PTrans_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 10, train_epochs = 10000):
     model_copy = copy.deepcopy(model)
     best_model_copy = copy.deepcopy(model)
     optimizer = torch.optim.Adam(model_copy.parameters(), lr=9e-3)
@@ -279,76 +281,47 @@ def main(args):
                        net3=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                        net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                        net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
-    best_model = BaseSolver(diff_eqs=ODESystem(),
-                            net1=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
-                            net2=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
-                            net3=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
-                            net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
-                            net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
-    optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
-    y_ind = np.arange(n)
-    train_epochs = 5000
-    loss_history = []
-    for epoch in range(train_epochs):
-        np.random.shuffle(y_ind)
-        epoch_loss = 0.0
-        batch_loss = 0.0
-        # model.train()
-        optimizer.zero_grad()
-        for i in range(0, n, variable_batch_size):
-            variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
-            batch_loss = model.compute_loss(
-                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
-                batch_y=true_y[variable_batch_id],  # [10, 5]
-                derivative_weight=args.penalty)  # 0.05
-            batch_loss.backward()
-            epoch_loss += batch_loss.item()
-        if epoch % 100 == 0:
-            print(f'Train Epoch: {epoch} '
-                    f'[{epoch}/{train_epochs} '
-                    f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
-        loss_history.append(epoch_loss)
-        if loss_history[-1] == min(loss_history):
-            best_model.load_state_dict(model.state_dict())
+    best_model = copy.deepcopy(model)
 
-    # check estimated path using 101 points
-    with torch.no_grad():
-        estimate_t = torch.linspace(0., 100., n)
-        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
-        estimate_funcs = torch.cat(estimate_funcs, dim=1).numpy()
+    k_folds = 5
+    kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
+    penalty_list = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+    CV_error_list = []
+    pretrain_list = []
+    start_time = time.time()
+    cumulative_time = 0
+    for penalty in penalty_list:
+        CV_error = 0
+        num = 0
 
-        estimate_t_1000 = torch.linspace(0., 100., 1001)
-        estimate_funcs_1000 = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t_1000.view(-1, 1)])
-        estimate_funcs_1000 = torch.cat(estimate_funcs_1000, dim=1).numpy()
+        # pretrain
+        model_pretrain = copy.deepcopy(model)
+        pretrain_dict = PTrans_pretrain(penalty, ydataFull, t, model_pretrain, train_generator, variable_batch_size, train_epochs = 10) #5000
+        model_pretrain.load_state_dict(pretrain_dict)
+        pretrain_list.append(pretrain_dict)
 
+        for train_idx, val_idx in kfold.split(true_y):
+            print(f"penalty: {penalty}, CV: {num}/{k_folds}")
+            CV_error += PTrans_CV(penalty, true_y, t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10) #10000
+            num+=1
+            end_time = time.time()
+            cumulative_time+= end_time-start_time
+            print(f"cumulative time: {cumulative_time:.3f}" )
+        print("CV_error: ", CV_error)
+        CV_error_list.append(CV_error)
+        
+    CV_error_list = np.array(CV_error_list)
+
+    penalty_CV = penalty_list[np.argmin(CV_error_list)]
+    pretrain_dict_CV = pretrain_list[np.argmin(CV_error_list)]
+    model.load_state_dict(pretrain_dict_CV)
+    print(penalty_CV)
 
     # save
     sci_str = format(args.true_sigma, ".0e")
-    
     output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_{sci_str}_CV"
     os.makedirs(f"{output_dir}/results", exist_ok=True)
-    
-    best_model.eval()
-    k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
-    param_results = torch.tensor([k1, k2, k3, k4, V, Km])  # (N,5)
-    
-    dt = estimate_t[1] - estimate_t[0]
 
-    val_term = np.sum((estimate_funcs - true_trajectory_100.numpy()) ** 2) * dt
-    print("val_term_part:", val_term)
-    dX_hat = fOde(theta = param_results, x = estimate_funcs, tvec = estimate_t)
-    dtrue = fOde(theta= theta_true, x=true_trajectory_100, tvec=estimate_t)
-
-    der_term = np.sum((dX_hat  - dtrue) ** 2)* dt
-    print("der_term_part:", der_term)
-    h1_error = np.sqrt(val_term + der_term)
-    print("h1_error: ", h1_error)
-
-
-    model.load_state_dict(best_model.state_dict())
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)  # 12e-3
     y_ind = np.arange(len(tvecObs))

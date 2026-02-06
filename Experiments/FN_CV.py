@@ -161,8 +161,6 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
 
 
 
-
-
 def main(args):
     true_theta = [0.2, 0.2, 3]
     true_x0 = [-1, 1]
