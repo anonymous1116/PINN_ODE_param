@@ -153,7 +153,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
 
-    CV_error = np.mean((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2, axis =0 )
+    CV_error = np.mean((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2)
     del model_copy, best_model_copy
     return CV_error
 
@@ -225,7 +225,7 @@ def main(args):
             num+=1
             end_time = time.time()
             cumulative_time+= end_time-start_time
-            print("cumulative time: ", cumulative_time)
+            print(f"cumulative time: {cumulative_time:.3f}" )
         print("CV_error: ", CV_error)
         CV_error_list.append(CV_error)
     
