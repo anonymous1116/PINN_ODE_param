@@ -157,6 +157,12 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
     del model_copy, best_model_copy
     return CV_error
 
+
+
+
+
+
+
 def main(args):
     true_theta = [0.2, 0.2, 3]
     true_x0 = [-1, 1]
@@ -231,7 +237,7 @@ def main(args):
     
     CV_error_list = np.array(CV_error_list)
 
-    penalty_CV = CV_error_list[np.argmin(CV_error_list)]
+    penalty_CV = penalty_list[np.argmin(CV_error_list)]
     print(penalty_CV)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
