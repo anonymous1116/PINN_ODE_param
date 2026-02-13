@@ -17,7 +17,7 @@ module load conda
 conda activate /depot/wangxiao/apps/hyun18/ODE
 
 # Change to the directory where the job was submitted from
-SLURM_SUBMIT_DIR=/home/hyun18/PINN_ODE_parm
+SLURM_SUBMIT_DIR=/home/hyun18/PINN_ODE_param
 cd $SLURM_SUBMIT_DIR
 
 # Calculate seed and dim_out
