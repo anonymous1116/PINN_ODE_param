@@ -294,13 +294,13 @@ def main(args):
 
         # pretrain
         model_pretrain = copy.deepcopy(model)
-        pretrain_dict = PTrans_pretrain(penalty, y_interpolate, t, model_pretrain, train_generator, variable_batch_size, train_epochs = 10) #5000
+        pretrain_dict = PTrans_pretrain(penalty, y_interpolate, t, model_pretrain, train_generator, variable_batch_size = 10, train_epochs = 5000) #5000
         model_pretrain.load_state_dict(pretrain_dict)
         pretrain_list.append(pretrain_dict)
 
         for train_idx, val_idx in kfold.split(ydata):
             print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += PTrans_CV(penalty, torch.from_numpy(ydata), t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10) #10000
+            CV_error += PTrans_CV(penalty, torch.from_numpy(ydata), t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 10, train_epochs = 10000) #10000
             num+=1
             end_time = time.time()
             cumulative_time+= end_time-start_time
