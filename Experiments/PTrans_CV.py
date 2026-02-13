@@ -290,6 +290,7 @@ def main(args):
     pretrain_list = []
     start_time = time.time()
     cumulative_time = 0
+    print("CV start")
     for penalty in penalty_list:
         CV_error = 0
         num = 0
