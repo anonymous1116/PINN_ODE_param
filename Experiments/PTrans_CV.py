@@ -245,9 +245,6 @@ def main(args):
     n = 101
     tvecObs = [0, 1, 2, 4, 5, 7, 10, 15, 20, 30, 40, 50, 60, 80, 100]
     tvecFull = np.linspace(0, 100, num=n)
-    ydataTruthFull = np.zeros((n, 5))
-    for j in range(5):
-        ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
     
     s = args.seed
 
@@ -267,7 +264,7 @@ def main(args):
     for j in range(5):
         ydataFull[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])  # [101, 5]
     t = torch.linspace(0., 100., n)  # torch.float32
-    true_y = torch.from_numpy(ydataFull)  # torch.float64
+    y_interpolate = torch.from_numpy(ydataFull)  # torch.float64
     
     t_min = 0.0
     t_max = 100.0
@@ -297,13 +294,13 @@ def main(args):
 
         # pretrain
         model_pretrain = copy.deepcopy(model)
-        pretrain_dict = PTrans_pretrain(penalty, ydataFull, t, model_pretrain, train_generator, variable_batch_size, train_epochs = 10) #5000
+        pretrain_dict = PTrans_pretrain(penalty, y_interpolate, t, model_pretrain, train_generator, variable_batch_size, train_epochs = 10) #5000
         model_pretrain.load_state_dict(pretrain_dict)
         pretrain_list.append(pretrain_dict)
 
-        for train_idx, val_idx in kfold.split(true_y):
+        for train_idx, val_idx in kfold.split(ydata):
             print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += PTrans_CV(penalty, true_y, t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10) #10000
+            CV_error += PTrans_CV(penalty, ydata, t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10) #10000
             num+=1
             end_time = time.time()
             cumulative_time+= end_time-start_time
