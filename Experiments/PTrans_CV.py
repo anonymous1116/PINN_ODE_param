@@ -422,8 +422,6 @@ def get_args():
                         help = "See number (default: 1)")
     parser.add_argument("--true_sigma", type = float, default = 0.01,
                         help = "observation errors (default: 0.01)")
-    parser.add_argument("--penalty", type = float, default = 0.07,
-                        help = "observation errors (default: 0.07)")
     return parser.parse_args()
 
 if __name__ == "__main__":
