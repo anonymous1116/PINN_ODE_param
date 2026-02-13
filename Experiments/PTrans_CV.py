@@ -300,7 +300,7 @@ def main(args):
 
         for train_idx, val_idx in kfold.split(ydata):
             print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += PTrans_CV(penalty, ydata, t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10) #10000
+            CV_error += PTrans_CV(penalty, torch.from_numpy(ydata), t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10) #10000
             num+=1
             end_time = time.time()
             cumulative_time+= end_time-start_time
