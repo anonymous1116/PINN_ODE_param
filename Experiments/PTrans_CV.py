@@ -340,7 +340,7 @@ def main(args):
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
                 variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)], 
                 batch_y=torch.from_numpy(ydata)[variable_batch_id],  # [10, 5]
-                derivative_weight=args.penalty)  # 0.05
+                derivative_weight=penalty_CV)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
             #if i % 100 == 0:
