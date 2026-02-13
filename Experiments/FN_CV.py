@@ -307,6 +307,8 @@ def main(args):
     dt = estimate_t[1] - estimate_t[0]
     
 
+    l2 = np.sqrt(np.mean((true_y.numpy() - estimate_funcs[observed_ind, :].numpy()) ** 2))
+
     print(f"Simulation {s} completed")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
@@ -314,6 +316,7 @@ def main(args):
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
     np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_error_list))
     np.save(f"{output_dir}/results/lambda_{s}.npy", penalty_CV)
+    np.save(f"{output_dir}/results/l2_{s}.npy", l2)
     
     print(f"Simulation {s} saved completed")
     
