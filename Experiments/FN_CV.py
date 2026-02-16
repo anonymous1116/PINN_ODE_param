@@ -225,7 +225,7 @@ def main(args):
         num = 0
         for train_idx, val_idx in kfold.split(true_y):
             print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10)
+            CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
             num+=1
             end_time = time.time()
             cumulative_time+= end_time-start_time
@@ -248,7 +248,7 @@ def main(args):
     #            )
     
     y_ind = np.arange(n)
-    train_epochs = 150  # 10000
+    train_epochs = 15000  # 10000
     loss_history = []
     #num_pilot = train_epochs/10
     for epoch in range(train_epochs):
