@@ -231,7 +231,7 @@ def main(args):
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
-    np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_term))
+    np.save(f"{output_dir}/results/l2_{s}.npy", np.array(CV_term))
     
     print(f"Simulation {s} saved completed")
     
