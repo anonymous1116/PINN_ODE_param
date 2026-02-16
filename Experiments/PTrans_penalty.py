@@ -390,8 +390,14 @@ def main(args):
     h1_error = np.sqrt(val_term + der_term)
     print("h1_error: ", h1_error)
     
-    np.save(f"{output_dir}/results/h1_errors_{s}.npy", h1_error)
-    np.save(f"{output_dir}/results/param_results{s}.npy", param_results)
+    l2 = np.sqrt(np.mean((ydata - estimate_funcs[tvecObs, :]) ** 2))
+
+    print(f"Simulation {s} completed")
+    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE_100)
+    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_error))
+    np.save(f"{output_dir}/results/l2_{s}.npy", l2)    
+    
     
     
 
