@@ -224,14 +224,15 @@ def main(args):
     dt = estimate_t[1] - estimate_t[0]
     
 
-    CV_term = np.sqrt(np.sum((estimate_funcs[observed_ind, :] - ydata) ** 2))
+    l2 = np.sqrt(np.mean((ydata - estimate_funcs[tvecObs, :]) ** 2))
+
     
     print(f"Simulation {s} completed")
     np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
-    np.save(f"{output_dir}/results/l2_{s}.npy", np.array(CV_term))
+    np.save(f"{output_dir}/results/l2_{s}.npy", l2)
     
     print(f"Simulation {s} saved completed")
     
