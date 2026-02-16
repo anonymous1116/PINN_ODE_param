@@ -282,7 +282,9 @@ def main(args):
 
     k_folds = 5
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
-    penalty_list = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+    #penalty_list = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+    penalty_list = [0.05, 0.1, 0.5, 0.8, 1.0, 2.0]
+    
     CV_error_list = []
     pretrain_list = []
     start_time = time.time()
@@ -408,11 +410,16 @@ def main(args):
     h1_error = np.sqrt(val_term + der_term)
     print("h1_error: ", h1_error)
     
-    np.save(f"{output_dir}/results/h1_errors_{s}.npy", h1_error)
-    np.save(f"{output_dir}/results/param_results{s}.npy", param_results)
-    
-    
+    l2 = np.sqrt(np.mean((ydata - estimate_funcs[tvecObs, :]) ** 2))
 
+    print(f"Simulation {s} completed")
+    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE_100)
+    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_error))
+    np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_error_list))
+    np.save(f"{output_dir}/results/lambda_{s}.npy", penalty_CV)
+    np.save(f"{output_dir}/results/l2_{s}.npy", l2)    
+    
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
