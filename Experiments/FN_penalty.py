@@ -229,7 +229,7 @@ def main(args):
     dt = estimate_t[1] - estimate_t[0]
     
     l2 = np.sqrt(np.mean((ydata - estimate_funcs[observed_ind, :]) ** 2))
-    
+    print("l2: ", l2)
     best_model.eval()
     #with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
 
