@@ -253,7 +253,7 @@ def main(args):
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
     np.save(f"{output_dir}/results/l2_{s}.npy", l2)
-    np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** 1/2))
+    np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** 0.5))
     
     print(f"Simulation {s} saved completed")
     
