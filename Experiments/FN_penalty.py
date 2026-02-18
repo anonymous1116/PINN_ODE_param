@@ -114,7 +114,7 @@ def main(args):
     true_x0 = [-1, 1]
     true_sigma = [args.true_sigma, args.true_sigma]
     sci_str = format(args.true_sigma, ".0e")
-    penalty = format(args.penalty, ".0e")
+    penalty = format(args.penalty, ".1e").replace(".", "_")
     
     print("sigma: ", sci_str, "penalty: ", penalty)
     n = 41
