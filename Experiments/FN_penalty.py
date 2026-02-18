@@ -244,7 +244,7 @@ def main(args):
         derivative_weight=0.5,
         return_parts=True
     )
-    print("derivative_loss =", float(dloss), "l2: ", vloss ** (1/2), "total: ", total)
+    print("derivative_loss =", float(dloss ** (1/2)), "l2: ", vloss ** (1/2), "total: ", total)
 
     
     print(f"Simulation {s} completed")
