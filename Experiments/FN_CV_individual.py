@@ -5,15 +5,17 @@ import pandas as pd
 import argparse
 import os
 import time, copy
-
 from abc import ABC
-from scipy.integrate import solve_ivp
+
 from sklearn.model_selection import KFold
+from scipy.integrate import solve_ivp
 from solvers_utils import PretrainedSolver
 from networks import FCNN, SinActv
 from generators import SamplerGenerator, Generator1D
 from neurodiffeq import safe_diff as diff
-from utils import h1_error_trajectory
+from FN_CV import FN_CV
+
+
 
 class ODESystem(nn.Module):
     def __init__(self):
@@ -23,6 +25,8 @@ class ODESystem(nn.Module):
         self.c = nn.Parameter(torch.tensor(0.5))
         self.V0 = nn.Parameter(torch.tensor(-1.))
         self.R0 = nn.Parameter(torch.tensor(1.))
+        # self.V0 = torch.tensor(-1.)
+        # self.R0 = torch.tensor(1.)
         self.initial_conditions = [self.V0, self.R0]
 
     def compute_derivative(self, V, R, t):
@@ -50,7 +54,7 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         self.net2 = net2
         self.nets = [net1, net2]
 
-    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5):
+    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5, return_parts = False):
         """derivative_batch_t can be sampled in any distribution and sample size.
         derivative_batch_t= list([derivative_batch_size, 1])
         """
@@ -69,7 +73,13 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
         variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
         variable_loss += ((variable_funcs - batch_y) ** 2).mean()
-        return derivative_weight * derivative_loss + variable_loss
+        
+        total_loss = derivative_weight * derivative_loss + variable_loss
+
+        if return_parts:
+            return total_loss, derivative_loss, variable_loss
+        return total_loss
+
 
 
 # 100 simulations
@@ -102,6 +112,7 @@ def fOdeDtheta(theta, x, tvec):
     resultDtheta[:, 1, 1] = -R / theta[2]
     resultDtheta[:, 2, 1] = 1.0/pow(theta[2], 2) * (V - theta[0] + theta[1] * R)
     return resultDtheta
+
 
 
 def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000):
@@ -153,10 +164,26 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
 
-    CV_error = np.mean((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2)
-    del model_copy, best_model_copy
-    return CV_error
+    CV_error = np.sum((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2)
 
+
+    
+    t_min = min(t)
+    t_max = max(t)    
+    new_derivative_batch_size = 2000
+    new_train_generator = SamplerGenerator(
+        Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
+
+
+    total, dloss, vloss = best_model_copy.compute_loss(
+        derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
+        variable_batch_t=[t.view(-1, 1)],
+        batch_y=obs_val,
+        derivative_weight=penalty,
+        return_parts=True
+    )
+
+    return total, dloss, vloss
 
 
 
@@ -166,7 +193,9 @@ def main(args):
     true_x0 = [-1, 1]
     true_sigma = [args.true_sigma, args.true_sigma]
     sci_str = format(args.true_sigma, ".0e")
+    penalty = format(args.penalty, ".1e").replace(".", "_")
     
+    print("sigma: ", sci_str, "penalty: ", penalty)
     n = 41
     tvecObs = np.linspace(0, 20, num=n)
     sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
@@ -193,7 +222,7 @@ def main(args):
     ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
     ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
 
-    output_dir = f"../depot_hyun/hyun/ODE_param/FN_sig{sci_str}/CV"
+    output_dir = f"../depot_hyun/hyun/ODE_param/FN_sig{sci_str}/lambda_{penalty}_CV"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
@@ -212,104 +241,29 @@ def main(args):
     best_model = BaseSolver(diff_eqs=ODESystem(),
                     net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
                     net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
+    optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
     
-
+    
     k_folds = 5
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
-    penalty_list = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
     CV_error_list = []
     start_time = time.time()
     cumulative_time = 0
-    for penalty in penalty_list:
-        CV_error = 0
-        num = 0
-        for train_idx, val_idx in kfold.split(true_y):
-            print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
-            num+=1
-            end_time = time.time()
-            cumulative_time+= end_time-start_time
-            print(f"cumulative time: {cumulative_time:.3f}" )
-        print("CV_error: ", CV_error)
-        CV_error_list.append(CV_error)
-    
+    CV_error = 0
+    num = 0
+    for train_idx, val_idx in kfold.split(true_y):
+        print(f"penalty: {penalty}, CV: {num}/{k_folds}")
+        CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
+        num+=1
+        end_time = time.time()
+        cumulative_time+= end_time-start_time
+        print(f"cumulative time: {cumulative_time:.3f}" )
+    print("CV_error: ", np.mean(CV_error))
+    CV_error_list.append(CV_error)
+
     CV_error_list = np.array(CV_error_list)
 
-    penalty_CV = penalty_list[np.argmin(CV_error_list)]
-    print(penalty_CV)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
-    
-    y_ind = np.arange(n)
-    train_epochs = 15000  # 10000
-    loss_history = []
-    #num_pilot = train_epochs/10
-    for epoch in range(train_epochs):
-        np.random.shuffle(y_ind)
-        epoch_loss = 0.0
-        batch_loss = 0.0
-        # model.train()
-        optimizer.zero_grad()
-        for i in range(0, n, variable_batch_size):
-            variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
-            batch_loss = model.compute_loss(
-                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
-                batch_y=true_y[variable_batch_id],  # [7, 2]
-                derivative_weight=penalty_CV
-                )
-            
-            batch_loss.backward()
-            epoch_loss += batch_loss.item()
-            if i % 100 == 0:
-                print(f'Train Epoch: {epoch} '
-                    f'[{i:05}/{n} '
-                    f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
-        #scheduler.step(batch_loss)
-        loss_history.append(epoch_loss)
-        if loss_history[-1] == min(loss_history):
-            best_model.load_state_dict(model.state_dict())
-
-    # check estimated parameters
-    best_model.eval()
-    param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
-
-    # check estimated path
-    with torch.no_grad():
-        estimate_t = torch.linspace(0., 20., 2001)
-        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
-        estimate_funcs = torch.cat(estimate_funcs, dim=1)
-    estimate_funcs = estimate_funcs.numpy()
-    #trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
-    #                                        axis=0))
-    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
-                                            axis=0))
-    
-    dt = tvecObs[1] - tvecObs[0]
-
-    val_term = np.sum((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2) * dt
-    print("val_term_part:", val_term)
-    tmp = fOde(theta = param_results, x = estimate_funcs[observed_ind,:], tvec = tvecObs)
-    dtrue = fOde(theta = true_theta, x = ydataTruth, tvec = estimate_t)
-    der_term = np.sum((tmp  - dtrue) ** 2)* dt
-    print("der_term_part:", der_term)
-    h1_part = np.sqrt(val_term + der_term)
-    print("H1: ", h1_part)
-    dt = estimate_t[1] - estimate_t[0]
-    
-
-    l2 = np.sqrt(np.mean((true_y.numpy() - estimate_funcs[observed_ind, :]) ** 2))
-
-    print(f"Simulation {s} completed")
-    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
-    np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
-    np.save(f"{output_dir}/results/CV_errors_{s}.npy", np.array(CV_error_list))
-    np.save(f"{output_dir}/results/lambda_{s}.npy", penalty_CV)
-    np.save(f"{output_dir}/results/l2_{s}.npy", l2)
     
     print(f"Simulation {s} saved completed")
     
@@ -320,6 +274,8 @@ def get_args():
                         help = "See number (default: 1)")
     parser.add_argument("--true_sigma", type = float, default = 0.2,
                         help = "observation errors (default: 0.2)")
+    parser.add_argument("--penalty", type = float, default = 0.8,
+                        help = "observation errors (default: 0.8)")
     return parser.parse_args()
 
 if __name__ == "__main__":
