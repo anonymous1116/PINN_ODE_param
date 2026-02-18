@@ -236,21 +236,23 @@ def main(args):
     cumulative_time = 0
     CV_l2_error = 0
     CV_deri_error = 0
-    _ = 0
     num = 0
     penalty = args.penalty
     for train_idx, val_idx in kfold.split(true_y):
         print(f"penalty: {penalty}, CV: {num}/{k_folds}")
         #_, CV_l2_error, CV_deri_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
-        _, CV_deri_error, CV_l2_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 100)
+        results = FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 100)
+        CV_deri_error += results[1]
+        CV_l2_error += results[2]
         
+
         num+=1
         end_time = time.time()
         cumulative_time+= end_time-start_time
         print(f"cumulative time: {cumulative_time:.3f}" )
 
-    CV_l2_error_final =  np.sum(CV_l2_error)/k_folds
-    CV_deri_error_final = np.sum(CV_deri_error)/k_folds
+    CV_l2_error_final =  CV_l2_error/k_folds
+    CV_deri_error_final = CV_deri_error/k_folds
     print("CV_l2_error: ", CV_l2_error_final)
     print("CV_deri_error: ", CV_deri_error_final)
 
