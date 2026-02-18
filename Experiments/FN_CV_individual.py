@@ -171,7 +171,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
 
     total, dloss, vloss = best_model_copy.compute_loss(
         derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
-        variable_batch_t=[t.view(-1, 1)],
+        variable_batch_t=[t[val_idx].view(-1, 1)],
         batch_y=obs_val,
         derivative_weight=penalty,
         return_parts=True
