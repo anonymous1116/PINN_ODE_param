@@ -237,7 +237,7 @@ def main(args):
     new_train_generator = SamplerGenerator(
         Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     
-    with torch.no_grad:
+    with torch.no_grad():
         total, dloss, vloss = best_model.compute_loss(
             derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
             variable_batch_t=[t.view(-1, 1)],
