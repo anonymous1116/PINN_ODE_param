@@ -24,8 +24,8 @@ cd $SLURM_SUBMIT_DIR
 seed=$((SLURM_ARRAY_TASK_ID))
 
 #python ./Experiments/FN_CV.py --seed $seed --true_sigma 2e-1
-#python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 2e-1 --penalty 1e+00
-python ./Experiments/FN_penalty.py --seed $seed --true_sigma 2e-1 --penalty 20e+00
+python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 2e-1 --penalty 3e+00
+#python ./Experiments/FN_penalty.py --seed $seed --true_sigma 2e-1 --penalty 20e+00
 #python ./Experiments/FN_CV_individual.py --seed 1 --true_sigma 2e-1 --penalty 1.0e+00
 
 #python ./Experiments/PTrans_penalty.py --seed 1 --true_sigma 1e-1 --penalty 1e+00
