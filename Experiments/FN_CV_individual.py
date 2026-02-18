@@ -6,7 +6,6 @@ import argparse
 import os
 import time, copy
 from abc import ABC
-
 from sklearn.model_selection import KFold
 from scipy.integrate import solve_ivp
 from solvers_utils import PretrainedSolver
@@ -113,8 +112,6 @@ def fOdeDtheta(theta, x, tvec):
     resultDtheta[:, 2, 1] = 1.0/pow(theta[2], 2) * (V - theta[0] + theta[1] * R)
     return resultDtheta
 
-
-
 def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000):
     model_copy = copy.deepcopy(model)
     best_model_copy = copy.deepcopy(model)
@@ -164,16 +161,13 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
 
-    CV_error = np.sum((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2)
-
-
+    CV_error = np.mean((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2)
     
     t_min = min(t)
     t_max = max(t)    
     new_derivative_batch_size = 2000
     new_train_generator = SamplerGenerator(
         Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
-
 
     total, dloss, vloss = best_model_copy.compute_loss(
         derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
@@ -182,10 +176,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         derivative_weight=penalty,
         return_parts=True
     )
-
-    return total, dloss, vloss
-
-
+    return total, dloss, vloss, CV_error
 
 
 def main(args):
@@ -238,27 +229,27 @@ def main(args):
     model = BaseSolver(diff_eqs=ODESystem(),
                     net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
                     net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
-    best_model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
-    
+
     
     k_folds = 5
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
     CV_error_list = []
     start_time = time.time()
     cumulative_time = 0
-    CV_error = 0
+    CV_l2_error = 0
+    CV_deri_error = 0
+    _ = 0
     num = 0
     for train_idx, val_idx in kfold.split(true_y):
         print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-        CV_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
+        #_, CV_l2_error, CV_deri_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
+        _, CV_l2_error, CV_deri_error, CV_error = FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
+        print(CV_l2_error, CV_error)
         num+=1
         end_time = time.time()
         cumulative_time+= end_time-start_time
         print(f"cumulative time: {cumulative_time:.3f}" )
-    print("CV_error: ", np.mean(CV_error))
+    print("CV_error: ", np.sum(CV_error))
     CV_error_list.append(CV_error)
 
     CV_error_list = np.array(CV_error_list)
