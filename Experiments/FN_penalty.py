@@ -225,13 +225,12 @@ def main(args):
     
 
     l2 = np.sqrt(np.mean((ydata - estimate_funcs[observed_ind, :]) ** 2))
-    with torch.no_grad():
-        derivative_batch_t = [estimate_t.view(-1, 1)]
-        derivative_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, derivative_batch_t)
-        derivative_residuals = best_model.diff_eqs.compute_derivative(*derivative_funcs,
-                                                                *derivative_batch_t)
-        derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
-        derivative_loss += (derivative_residuals ** 2).mean()
+    derivative_batch_t = [estimate_t.view(-1, 1)]
+    derivative_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, derivative_batch_t)
+    derivative_residuals = best_model.diff_eqs.compute_derivative(*derivative_funcs,
+                                                            *derivative_batch_t)
+    derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
+    derivative_loss += (derivative_residuals ** 2).mean()
 
 
     
