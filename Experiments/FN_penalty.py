@@ -231,14 +231,14 @@ def main(args):
     l2 = np.sqrt(np.mean((ydata - estimate_funcs[observed_ind, :]) ** 2))
     
     best_model.eval()
-    with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
-        total, dloss, vloss = best_model.compute_loss(
-            derivative_batch_t=[estimate_t.view(-1, 1)],
-            variable_batch_t=t,
-            batch_y=true_y,
-            derivative_weight=0.5,
-            return_parts=True
-        )
+    #with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
+    total, dloss, vloss = best_model.compute_loss(
+        derivative_batch_t=[estimate_t.view(-1, 1)],
+        variable_batch_t=t,
+        batch_y=true_y,
+        derivative_weight=0.5,
+        return_parts=True
+    )
     print("derivative_loss =", float(dloss), "l2: ", vloss, "total: ", total)
 
     
