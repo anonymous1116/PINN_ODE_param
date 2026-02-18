@@ -172,7 +172,7 @@ def main(args):
     #            )
     
     y_ind = np.arange(n)
-    train_epochs = 15  # 10000
+    train_epochs = 150  # 10000
     loss_history = []
     #num_pilot = train_epochs/10
     for epoch in range(train_epochs):
@@ -237,6 +237,17 @@ def main(args):
     new_train_generator = SamplerGenerator(
         Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     
+
+    total, dloss, vloss = best_model.compute_loss(
+        derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],
+        variable_batch_t=[t.view(-1, 1)],
+        batch_y=true_y,
+        derivative_weight=0.5,
+        return_parts=True
+    )
+    print("derivative_loss =", float(dloss), "l2: ", vloss ** (1/2), "total: ", total)
+
+
     total, dloss, vloss = best_model.compute_loss(
         derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
         variable_batch_t=[t.view(-1, 1)],
@@ -253,7 +264,7 @@ def main(args):
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
     np.save(f"{output_dir}/results/l2_{s}.npy", l2)
-    np.save(f"{output_dir}/results/derivative_loss_{s}.npy", derivative_loss)
+    np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss))
     
     print(f"Simulation {s} saved completed")
     
