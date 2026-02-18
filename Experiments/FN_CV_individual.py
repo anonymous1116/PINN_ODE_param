@@ -241,7 +241,7 @@ def main(args):
     for train_idx, val_idx in kfold.split(true_y):
         print(f"penalty: {penalty}, CV: {num}/{k_folds}")
         #_, CV_l2_error, CV_deri_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
-        results = FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 100)
+        results = FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
         CV_deri_error += results[1]
         CV_l2_error += results[2]
         
