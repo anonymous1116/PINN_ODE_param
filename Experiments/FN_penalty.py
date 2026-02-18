@@ -233,7 +233,7 @@ def main(args):
     best_model.eval()
     #with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
     total, dloss, vloss = best_model.compute_loss(
-        derivative_batch_t=[estimate_t.view(-1, 1)],
+        derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],
         variable_batch_t=[t.view(-1, 1)],
         batch_y=true_y,
         derivative_weight=0.5,
