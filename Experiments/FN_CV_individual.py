@@ -161,8 +161,6 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
 
-    CV_error = np.mean((estimate_funcs[val_idx,:] - obs_val.numpy()) ** 2)
-    
     t_min = min(t)
     t_max = max(t)    
     new_derivative_batch_size = 2000
@@ -176,7 +174,7 @@ def FN_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_
         derivative_weight=penalty,
         return_parts=True
     )
-    return total, dloss, vloss, CV_error
+    return total, dloss, vloss
 
 
 def main(args):
@@ -233,7 +231,7 @@ def main(args):
     
     k_folds = 5
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
-    CV_error_list = []
+
     start_time = time.time()
     cumulative_time = 0
     CV_l2_error = 0
@@ -244,18 +242,21 @@ def main(args):
     for train_idx, val_idx in kfold.split(true_y):
         print(f"penalty: {penalty}, CV: {num}/{k_folds}")
         #_, CV_l2_error, CV_deri_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
-        _, CV_deri_error, CV_l2_error, CV_error = FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 100)
-        print(CV_l2_error, CV_error)
+        _, CV_deri_error, CV_l2_error = FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
+        
         num+=1
         end_time = time.time()
         cumulative_time+= end_time-start_time
         print(f"cumulative time: {cumulative_time:.3f}" )
-    print("CV_error: ", np.sum(CV_error))
-    CV_error_list.append(CV_error)
 
-    CV_error_list = np.array(CV_error_list)
+    CV_l2_error_final =  np.sum(CV_l2_error)/k_folds
+    CV_deri_error_final = np.sum(CV_deri_error)/k_folds
+    print("CV_l2_error: ", CV_l2_error_final)
+    print("CV_deri_error: ", CV_deri_error_final)
 
-
+    np.save(f"{output_dir}/results/CV_l2_{s}.npy", CV_l2_error_final)
+    np.save(f"{output_dir}/results/CV_derivative_loss_{s}.npy", CV_deri_error_final)
+    
     
     print(f"Simulation {s} saved completed")
     
