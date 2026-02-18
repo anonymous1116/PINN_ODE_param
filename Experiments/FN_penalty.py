@@ -50,7 +50,7 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         self.net2 = net2
         self.nets = [net1, net2]
 
-    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5):
+    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5, return_parts = False):
         """derivative_batch_t can be sampled in any distribution and sample size.
         derivative_batch_t= list([derivative_batch_size, 1])
         """
@@ -69,7 +69,12 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
         variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
         variable_loss += ((variable_funcs - batch_y) ** 2).mean()
-        return derivative_weight * derivative_loss + variable_loss
+        
+        total_loss = derivative_weight * derivative_loss + variable_loss
+
+        if return_parts:
+            return total_loss, derivative_loss, variable_loss
+        return total_loss
 
 
 # 100 simulations
@@ -223,15 +228,18 @@ def main(args):
     print("H1: ", h1_part)
     dt = estimate_t[1] - estimate_t[0]
     
-
     l2 = np.sqrt(np.mean((ydata - estimate_funcs[observed_ind, :]) ** 2))
-    derivative_batch_t = [estimate_t.view(-1, 1)]
-    derivative_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, derivative_batch_t)
-    derivative_residuals = best_model.diff_eqs.compute_derivative(*derivative_funcs,
-                                                            *derivative_batch_t)
-    derivative_residuals = torch.cat(derivative_residuals, dim=1)  # [100, 5]
-    derivative_loss += (derivative_residuals ** 2).mean()
-
+    
+    best_model.eval()
+    with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
+        total, dloss, vloss = best_model.compute_loss(
+            derivative_batch_t=[estimate_t],
+            variable_batch_t=t,
+            batch_y=true_y,
+            derivative_weight=0.5,
+            return_parts=True
+        )
+    print("derivative_loss =", float(dloss), "l2: ", vloss, "total: ", total)
 
     
     print(f"Simulation {s} completed")
