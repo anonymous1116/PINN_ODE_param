@@ -256,8 +256,8 @@ def main(args):
     print("CV_l2_error: ", CV_l2_error_final)
     print("CV_deri_error: ", CV_deri_error_final)
 
-    np.save(f"{output_dir}/results/CV_l2_{s}.npy", CV_l2_error_final)
-    np.save(f"{output_dir}/results/CV_derivative_loss_{s}.npy", CV_deri_error_final)
+    np.save(f"{output_dir}/results/CV_l2_{s}.npy", float(CV_l2_error_final))
+    np.save(f"{output_dir}/results/CV_derivative_loss_{s}.npy", float(CV_deri_error_final))
     
     
     print(f"Simulation {s} saved completed")
