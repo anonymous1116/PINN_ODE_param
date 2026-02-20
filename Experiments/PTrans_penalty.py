@@ -208,7 +208,7 @@ def main(args):
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(n)
-    train_epochs = 5000
+    train_epochs = 50
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -255,7 +255,7 @@ def main(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
-    train_epochs = 10000
+    train_epochs = 100
     
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -266,10 +266,7 @@ def main(args):
         optimizer.zero_grad()
         for i in range(0, len(y_ind), variable_batch_size):
             variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            #print(f"derivative_batch_t: {[s.reshape(-1, 1) for s in train_generator.get_examples()]}")
-            #print(f"variable_batch_t: {[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)]}")
-            #print(f"batch_y: {ydata[variable_batch_id]}")
-    
+            
             batch_loss = model.compute_loss(
                 derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
                 variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)], 
@@ -277,10 +274,6 @@ def main(args):
                 derivative_weight=args.penalty)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-            #if i % 100 == 0:
-            #     print(f'Train Epoch: {epoch} '
-            #           f'[{i:05}/{n} '
-            #           f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
         if epoch % 100 == 0:
             print(f'Train Epoch: {epoch} '
@@ -369,8 +362,6 @@ def main(args):
     
     print(f"Simulation {s} saved completed")
     
-
-
     
 
 def get_args():
@@ -379,7 +370,7 @@ def get_args():
                         help = "See number (default: 1)")
     parser.add_argument("--true_sigma", type = float, default = 0.01,
                         help = "observation errors (default: 0.01)")
-    parser.add_argument("--penalty", type = float, default = 0.07,
+    parser.add_argument("--penalty", type = float, default = 0.1,
                         help = "observation errors (default: 0.07)")
     return parser.parse_args()
 
