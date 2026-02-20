@@ -23,7 +23,7 @@ cd $SLURM_SUBMIT_DIR
 # Calculate seed and dim_out
 seed=$((SLURM_ARRAY_TASK_ID))
 
-penalty=1e+0
+penalty=5e+0
 #python ./Experiments/FN_CV.py --seed $seed --true_sigma 2e-1
 #python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 2e-2 --penalty $penalty
 python ./Experiments/PTrans_penalty.py --seed $seed --true_sigma 1e-2 --penalty $penalty
