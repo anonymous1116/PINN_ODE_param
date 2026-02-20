@@ -29,7 +29,7 @@ python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 2e-2 --penalt
 python ./Experiments/FN_penalty.py --seed $seed --true_sigma 2e-2 --penalty $penalty
 #python ./Experiments/FN_CV_individual.py --seed 1 --true_sigma 2e-1 --penalty 1.0e+00
 
-#python ./Experiments/PTrans_penalty.py --seed 1 --true_sigma 1e-1 --penalty 1e+00
+#python ./Experiments/PTrans_penalty.py --seed 1 --true_sigma 1e-2 --penalty 1e+00
 #python ./Experiments/PTrans_CV.py --seed $seed --true_sigma 1e-1
 #python ./Experiments/PTrans_CV.py --seed $seed --true_sigma 1e-2
 #python ./Experiments/FN_SA2.py --seed 1 --true_sigma 2e-1 --penalty 1e+00
