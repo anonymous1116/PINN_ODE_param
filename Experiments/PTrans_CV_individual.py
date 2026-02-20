@@ -270,7 +270,7 @@ def main(args):
     sci_str = format(args.true_sigma, ".0e")
     penalty = format(args.penalty, ".1e").replace(".", "_")
     
-    output_dir = f"../depot_hyun/hyun/ODE_param/FN_sig{sci_str}/lambda_{penalty}_CV"
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}/lambda_{penalty}_CV"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
