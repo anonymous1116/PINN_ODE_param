@@ -57,7 +57,7 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         self.net5 = net5
         self.nets = [net1, net2, net3, net4, net5]
 
-    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5):
+    def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5, return_parts = False):
         """derivative_batch_t can be sampled in any distribution and sample size.
         derivative_batch_t= list([derivative_batch_size, 1])
         """
@@ -76,10 +76,14 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
         variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
         variable_loss += ((variable_funcs - batch_y) ** 2).mean()
-        return derivative_weight * derivative_loss + variable_loss
+        
+        total_loss = derivative_weight * derivative_loss + variable_loss
+
+        if return_parts:
+            return total_loss, derivative_loss, variable_loss
+        return total_loss
 
 
-import numpy as np
 
 def fOde(theta, x, tvec=None, eps=1e-12):
     """
@@ -112,8 +116,6 @@ def fOde(theta, x, tvec=None, eps=1e-12):
     dRpp =  k4*SR   - V*Rpp/denom
 
     return np.stack([dS, dSd, dR, dSR, dRpp], axis=1)
-
-
 
 
 def main(args):
@@ -169,10 +171,12 @@ def main(args):
     torch.manual_seed(SEED[s, 0].data)
 
     sci_str = format(args.true_sigma, ".0e")
+    penalty = format(args.penalty, ".1e").replace(".", "_")
     
-    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}"
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}/lambda_{penalty}"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
+    
 
     ydata = ydataTruth + np.random.normal(0, args.true_sigma, ydataTruth.shape)  # [15, 5]
     np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
@@ -240,64 +244,12 @@ def main(args):
         estimate_t_1000 = torch.linspace(0., 100., 1001)
         estimate_funcs_1000 = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t_1000.view(-1, 1)])
         estimate_funcs_1000 = torch.cat(estimate_funcs_1000, dim=1).numpy()
-
-    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs-ydataTruthFull)**2, axis=0))
-    trajectory[s, :, :] = estimate_funcs
-    print(f"Simulation {s} finished")
-    print(trajectory_RMSE)
-
-    true_trajectory_100 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_100.txt", header=None)
-    true_trajectory_100 = torch.tensor(true_trajectory_100.to_numpy()[:,1:6], dtype = torch.float32)
-    #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
-    trajectory_RMSE_100 = np.sqrt(np.mean((estimate_funcs-true_trajectory_100.numpy())**2, axis=0))
-    
-    true_trajectory_1000 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_1000.txt", header=None)
-    true_trajectory_1000 = torch.tensor(true_trajectory_1000.to_numpy()[:,1:6], dtype = torch.float32)
-    #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
-    trajectory_RMSE_1000 = np.sqrt(np.mean((estimate_funcs_1000-true_trajectory_1000.numpy())**2, axis=0))
-    
-
-    # save
-    sci_str = format(args.true_sigma, ".0e")
-    penalty = format(args.penalty, ".0e")
-    
-    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_{sci_str}_penalty_{penalty}"
-    os.makedirs(f"{output_dir}/results", exist_ok=True)
-    
-    print(f"Simulation {s} finished")
-    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/trajectory_RMSE100_{s}.npy", trajectory_RMSE_100)
-    np.save(f"{output_dir}/results/trajectory_RMSE1000_{s}.npy", trajectory_RMSE_1000)
-    print(f"trajectory_RMSE: {trajectory_RMSE}", flush=True)
-    print(f"trajectory_RMSE_100: {trajectory_RMSE_100}", flush=True)
-    print(f"trajectory_RMSE_1000: {trajectory_RMSE_1000}", flush=True)
-    
-    os.makedirs(f"{output_dir}/ydata", exist_ok=True)
-    np.save(f"{output_dir}/ydata/ydata_{s}.npy", ydata)
     
     best_model.eval()
     k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
     param_results = torch.tensor([k1, k2, k3, k4, V, Km])  # (N,5)
     
-    dt = estimate_t[1] - estimate_t[0]
 
-    val_term = np.sum((estimate_funcs - true_trajectory_100.numpy()) ** 2) * dt
-    print("val_term_part:", val_term)
-    dX_hat = fOde(theta = param_results, x = estimate_funcs, tvec = estimate_t)
-    dtrue = fOde(theta= theta_true, x=true_trajectory_100, tvec=estimate_t)
-
-    der_term = np.sum((dX_hat  - dtrue) ** 2)* dt
-    print("der_term_part:", der_term)
-    h1_error = np.sqrt(val_term + der_term)
-    print("h1_error: ", h1_error)
-
-    #======================================= with only ydata ==============================#=============================
-    #model2 = BaseSolver(diff_eqs=ODESystem(),
-    #                   net1=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
-    #                   net2=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
-    #                   net3=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
-    #                   net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
-    #                   net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     model.load_state_dict(best_model.state_dict())
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)  # 12e-3
@@ -341,6 +293,7 @@ def main(args):
 
 
     # check estimated path using 101 points
+    best_model.eval()
     with torch.no_grad():
         estimate_t = torch.linspace(0., 100., n)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
@@ -368,8 +321,6 @@ def main(args):
 
     # save
     print(f"Simulation {s} finished")
-    np.save(f"{output_dir}/results/trajectory_RMSE100_{s}_after.npy", trajectory_RMSE_100)
-    np.save(f"{output_dir}/results/trajectory_RMSE1000_{s}_after.npy", trajectory_RMSE_1000)
     print(f"trajectory_RMSE_100_after: {trajectory_RMSE_100}", flush=True)
     print(f"trajectory_RMSE_1000_after: {trajectory_RMSE_1000}", flush=True)
     
@@ -391,16 +342,36 @@ def main(args):
     print("h1_error: ", h1_error)
     
     l2 = np.sqrt(np.mean((ydata - estimate_funcs[tvecObs, :]) ** 2))
+    print("l2: ", l2)
+    best_model.eval()
+    #with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
 
+    new_derivative_batch_size = 2000
+    new_train_generator = SamplerGenerator(
+        Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
+
+    total, dloss, vloss = best_model.compute_loss(
+        derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
+        variable_batch_t=[t.view(-1, 1)],
+        batch_y=true_y,
+        derivative_weight=0.5,
+        return_parts=True
+    )
+    print("derivative_loss =", float(dloss ** (1/2)), "l2: ", vloss ** (1/2), "total: ", total)
+
+    
     print(f"Simulation {s} completed")
-    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE_100)
+    np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE_100)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_error))
-    np.save(f"{output_dir}/results/l2_{s}.npy", l2)    
+    np.save(f"{output_dir}/results/l2_{s}.npy", l2)
+    np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** (1/2)))
     
-    
+    print(f"Simulation {s} saved completed")
     
 
+
+    
 
 def get_args():
     parser = argparse.ArgumentParser(description="Run simulation with customizable parameters.")
