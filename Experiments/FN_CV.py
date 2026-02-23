@@ -216,6 +216,7 @@ def main(args):
 
     k_folds = 5
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
+    #penalty_list = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
     penalty_list = [0,5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
     CV_error_list = []
     start_time = time.time()
