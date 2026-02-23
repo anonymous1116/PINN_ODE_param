@@ -295,8 +295,7 @@ def main(args):
                        net3=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                        net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                        net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
-    best_model = copy.deepcopy(model)
-
+    
     k_folds = 5
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
     start_time = time.time()

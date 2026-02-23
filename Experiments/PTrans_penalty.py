@@ -13,12 +13,12 @@ import argparse, os
 class ODESystem(nn.Module):
     def __init__(self):
         super().__init__()
-        self.k1 = nn.Parameter(torch.tensor(0.5))
-        self.k2 = nn.Parameter(torch.tensor(0.5))
-        self.k3 = nn.Parameter(torch.tensor(0.5))
-        self.k4 = nn.Parameter(torch.tensor(0.5))
-        self.V = nn.Parameter(torch.tensor(0.5))
-        self.Km = nn.Parameter(torch.tensor(0.5))
+        self.k1 = nn.Parameter(torch.tensor(0.07))
+        self.k2 = nn.Parameter(torch.tensor(0.6))
+        self.k3 = nn.Parameter(torch.tensor(0.05))
+        self.k4 = nn.Parameter(torch.tensor(0.3))
+        self.V = nn.Parameter(torch.tensor(0.017))
+        self.Km = nn.Parameter(torch.tensor(0.3))
         self.S0 = nn.Parameter(torch.tensor(1.))
         self.Sd0 = nn.Parameter(torch.tensor(0.))
         self.R0 = nn.Parameter(torch.tensor(1.))
