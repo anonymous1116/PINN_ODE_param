@@ -106,7 +106,7 @@ def main(args):
     true_theta = [0.3, 0.1]
     true_x0 = [99, 1, 0]
     true_sigma = args.true_sigma
-    sci_str = format(args.true_sigma, ".0e")
+    sci_str = format(args.true_sigma, ".0e")≈
     penalty = format(args.penalty, ".1e").replace(".", "_")
     
     print("sigma: ", sci_str, "penalty: ", penalty)
@@ -194,11 +194,14 @@ def main(args):
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
+            param_results = np.array([best_model.diff_eqs.beta.data, best_model.diff_eqs.gamma.data])
+            print(f"param_results at: {epoch}, {param_results}")
+    
 
     # check estimated parameters
     best_model.eval()
-    param_results = np.array([best_model.diff_eqs.a.data, best_model.diff_eqs.b.data, best_model.diff_eqs.c.data])
-
+    param_results = np.array([best_model.diff_eqs.beta.data, best_model.diff_eqs.gamma.data])
+    print("param_results:", param_results)
     # check estimated path
     with torch.no_grad():
         estimate_t = torch.linspace(0., 20., 2001)
