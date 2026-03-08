@@ -145,9 +145,9 @@ def main(args):
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
+                    net1=FCNN(n_input_units=1, n_output_units=3, hidden_units=[64, 64], actv=SinActv))
     best_model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
+                    net1=FCNN(n_input_units=1, n_output_units=3, hidden_units=[64, 64], actv=SinActv))
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     #            optimizer,
