@@ -30,7 +30,7 @@ class ODESystem(nn.Module):
         R.shape = [batch, 1]
         t.shape = [batch, 1]
         """
-        N = 100
+        N = 100.0
         return [
             diff(S, t) + self.beta * S * I / N,
             diff(I, t) - self.beta * S * I / N + self.gamma * I,
@@ -50,13 +50,13 @@ class ODESystem(nn.Module):
 
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
-    def __init__(self, diff_eqs, net1, net2, net3):
+    def __init__(self, diff_eqs, netS, netI, netR):
         super().__init__()
         self.diff_eqs = diff_eqs
-        self.net1 = net1
-        self.net2 = net2
-        self.net3 = net3
-        self.nets = [net1, net2, net3]
+        self.netS = netS
+        self.netI = netI
+        self.netR = netR
+        self.nets = [netS, netI, netR]
 
     def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5, return_parts = False):
         """derivative_batch_t can be sampled in any distribution and sample size.
