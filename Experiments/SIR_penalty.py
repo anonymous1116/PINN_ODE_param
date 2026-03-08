@@ -137,7 +137,7 @@ def main(args):
     
     t = torch.linspace(0., 20., n)  # torch.float32
     true_y = torch.from_numpy(ydata)  # torch.float64
-    true_y = torch.reshape(true_y, (true_y, 1))
+    true_y = torch.reshape(true_y, (true_y.size(0), 1))
     t_min = 0.0
     t_max = 100.0
     variable_batch_size = 7
