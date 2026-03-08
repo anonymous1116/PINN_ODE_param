@@ -120,7 +120,7 @@ def main(args):
     ydataTruth = sol.y
     ydataTruth = np.array(ydataTruth).transpose()
 
-    tvecFull = np.linspace(0, 20, num=2001)
+    tvecFull = np.linspace(0, 100, num=2001)
     solFull = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
                         t_span=[0, tvecFull[-1]], y0=true_x0, t_eval=tvecFull, vectorized=True)
     ydataTruthFull = solFull.y
@@ -206,19 +206,21 @@ def main(args):
     param_results = np.array([best_model.diff_eqs.beta.data, best_model.diff_eqs.gamma.data])
     print("param_results:", param_results)
     # check estimated path
+    observed_ind = np.linspace(0, 2000, num=101, dtype=int)
+
     with torch.no_grad():
-        estimate_t = torch.linspace(0., 20., 2001)
+        estimate_t = torch.linspace(0., 100., 2001)
         estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
     #trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
     #                                        axis=0))
-    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
+    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs - ydataTruthFull) ** 2,
                                             axis=0))
     
     dt = tvecObs[1] - tvecObs[0]
 
-    val_term = np.sum((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2) * dt
+    val_term = np.sum((estimate_funcs - ydataTruthFull) ** 2) * dt
     print("val_term_part:", val_term)
     tmp = fOde(theta = param_results, x = estimate_funcs[observed_ind,:], tvec = tvecObs)
     dtrue = fOde(theta = true_theta, x = ydataTruth, tvec = estimate_t)
@@ -248,12 +250,12 @@ def main(args):
 
     
     print(f"Simulation {s} completed")
-    #np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
-    #np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
-    #np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-    #np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
-    #np.save(f"{output_dir}/results/l2_{s}.npy", l2)
-    #np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** (1/2)))
+    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
+    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
+    np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
+    np.save(f"{output_dir}/results/l2_{s}.npy", l2)
+    np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** (1/2)))
     
     print(f"Simulation {s} saved completed")
     
