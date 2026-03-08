@@ -229,7 +229,7 @@ def main(args):
         num = 0
         for train_idx, val_idx in kfold.split(true_y):
             print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += SIR_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10)
+            CV_error += SIR_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
             num+=1
             end_time = time.time()
             cumulative_time+= end_time-start_time
@@ -240,12 +240,12 @@ def main(args):
     CV_error_list = np.array(CV_error_list)
 
     penalty_CV = penalty_list[np.argmin(CV_error_list)]
-    print(penalty_CV)
+    print("chosen lambda: ", penalty_CV)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     
     y_ind = np.arange(n)
-    train_epochs = 10  # 10000
+    train_epochs = 10000  # 10000
     loss_history = []
     #num_pilot = train_epochs/10
     for epoch in range(train_epochs):
