@@ -33,7 +33,8 @@ class ODESystem(nn.Module):
         """S.shape = [batch, 1]
         t.shape = [batch, 1]
         """
-        return [diff(S, t) + self.k1 * S + self.k2 * S * R - self.k3 * SR, diff(Sd, t) - self.k1 * S,
+        return [diff(S, t) + self.k1 * S + self.k2 * S * R - self.k3 * SR, 
+                diff(Sd, t) - self.k1 * S,
                 diff(R, t) + self.k2 * S * R - self.k3 * SR - self.V * Rpp / (self.Km + Rpp),
                 diff(SR, t) - self.k2 * S * R + self.k3 * SR + self.k4 * SR,
                 diff(Rpp, t) - self.k4 * SR + self.V * Rpp / (self.Km + Rpp)]
