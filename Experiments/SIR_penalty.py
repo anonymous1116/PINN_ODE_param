@@ -148,15 +148,16 @@ def main(args):
     derivative_batch_size = 1000
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
+    hidden_units = [32, 32]
     model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                    net3=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv)
+                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=hidden_units, actv=SinActv),
+                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=hidden_units, actv=SinActv),
+                    net3=FCNN(n_input_units=1, n_output_units=1, hidden_units=hidden_units, actv=SinActv)
                     )
     best_model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
-                    net3=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv)
+                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=hidden_units, actv=SinActv),
+                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=hidden_units, actv=SinActv),
+                    net3=FCNN(n_input_units=1, n_output_units=1, hidden_units=hidden_units, actv=SinActv)
                     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
