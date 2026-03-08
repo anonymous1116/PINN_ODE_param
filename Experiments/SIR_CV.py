@@ -154,7 +154,7 @@ def SIR_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
 
-    CV_error = np.mean((estimate_funcs[val_idx,1] - obs_val.numpy()) ** 2)
+    CV_error = np.mean((estimate_funcs[val_idx,1] - obs_val.numpy()[:, 0]) ** 2)
     del model_copy, best_model_copy
     return CV_error
 
