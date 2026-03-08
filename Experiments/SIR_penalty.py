@@ -196,6 +196,7 @@ def main(args):
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
+            best_model.eval()
             param_results = np.array([best_model.diff_eqs.beta.data, best_model.diff_eqs.gamma.data])
             print(f"param_results at: {epoch}, {param_results}")
     
