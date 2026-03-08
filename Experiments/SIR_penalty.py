@@ -106,7 +106,7 @@ def main(args):
     true_theta = [0.3, 0.1]
     true_x0 = [99, 1, 0]
     true_sigma = args.true_sigma
-    sci_str = format(args.true_sigma, ".0e")≈
+    sci_str = format(args.true_sigma, ".0e")
     penalty = format(args.penalty, ".1e").replace(".", "_")
     
     print("sigma: ", sci_str, "penalty: ", penalty)
