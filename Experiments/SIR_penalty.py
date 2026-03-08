@@ -32,8 +32,8 @@ class ODESystem(nn.Module):
         """
         N = 100
         return [
-            diff(S, t) + self.beta * S * I / 100,
-            diff(I, t) - self.beta * S * I / 100 + self.gamma * I,
+            diff(S, t) + self.beta * S * I / N,
+            diff(I, t) - self.beta * S * I / N + self.gamma * I,
             diff(R, t) - self.gamma * I,
         ]
             
