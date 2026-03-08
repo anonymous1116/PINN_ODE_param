@@ -16,8 +16,8 @@ from utils import h1_error_trajectory
 class ODESystem(nn.Module):
     def __init__(self):
         super().__init__()
-        self.beta = nn.Parameter(torch.tensor(0.5))
-        self.gamma = nn.Parameter(torch.tensor(0.5))
+        self.beta = nn.Parameter(torch.tensor(0.3))
+        self.gamma = nn.Parameter(torch.tensor(0.1))
         self.S0 = torch.tensor(99.)
         self.I0 = torch.tensor(1.)
         self.R0 = torch.tensor(0.)
@@ -50,11 +50,13 @@ class ODESystem(nn.Module):
 
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
-    def __init__(self, diff_eqs, net1):
+    def __init__(self, diff_eqs, net1, net2, net3):
         super().__init__()
         self.diff_eqs = diff_eqs
         self.net1 = net1
-        self.nets = [net1]
+        self.net1 = net2
+        self.net1 = net3
+        self.nets = [net1, net2, net3]
 
     def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5, return_parts = False):
         """derivative_batch_t can be sampled in any distribution and sample size.
@@ -145,9 +147,15 @@ def main(args):
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=3, hidden_units=[64, 64], actv=SinActv))
+                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
+                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
+                    net3=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv)
+                    )
     best_model = BaseSolver(diff_eqs=ODESystem(),
-                    net1=FCNN(n_input_units=1, n_output_units=3, hidden_units=[64, 64], actv=SinActv))
+                    net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
+                    net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
+                    net3=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv)
+                    )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     #            optimizer,
