@@ -16,8 +16,8 @@ from utils import h1_error_trajectory
 class ODESystem(nn.Module):
     def __init__(self):
         super().__init__()
-        self.beta = nn.Parameter(torch.tensor(0.3))
-        self.gamma = nn.Parameter(torch.tensor(0.1))
+        self.beta = nn.Parameter(torch.tensor(0.5))
+        self.gamma = nn.Parameter(torch.tensor(0.2))
         self.S0 = torch.tensor(90.)
         self.I0 = torch.tensor(10.)
         self.R0 = torch.tensor(0.)
