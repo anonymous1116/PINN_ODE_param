@@ -54,8 +54,8 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         super().__init__()
         self.diff_eqs = diff_eqs
         self.net1 = net1
-        self.net1 = net2
-        self.net1 = net3
+        self.net2 = net2
+        self.net3 = net3
         self.nets = [net1, net2, net3]
 
     def compute_loss(self, derivative_batch_t, variable_batch_t, batch_y, derivative_weight=0.5, return_parts = False):
