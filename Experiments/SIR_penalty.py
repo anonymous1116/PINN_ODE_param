@@ -115,7 +115,7 @@ def main(args):
     sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
                     t_span=[0, tvecObs[-1]], y0=true_x0, t_eval=tvecObs, vectorized=True)
     
-    print(sol)
+    print("sol:", sol)
 
     ydataTruth = sol.y
     ydataTruth = np.array(ydataTruth).transpose()
