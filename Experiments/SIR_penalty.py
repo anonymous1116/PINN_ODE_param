@@ -18,8 +18,8 @@ class ODESystem(nn.Module):
         super().__init__()
         self.beta = nn.Parameter(torch.tensor(0.3))
         self.gamma = nn.Parameter(torch.tensor(0.1))
-        self.S0 = torch.tensor(99.)
-        self.I0 = torch.tensor(1.)
+        self.S0 = torch.tensor(90.)
+        self.I0 = torch.tensor(10.)
         self.R0 = torch.tensor(0.)
         self.initial_conditions = [self.S0, self.I0, self.R0]
 
@@ -104,7 +104,7 @@ def fOde(theta, x, tvec, N=100):
 
 def main(args):
     true_theta = [0.3, 0.1]
-    true_x0 = [99, 1, 0]
+    true_x0 = [90, 10, 0]
     true_sigma = args.true_sigma
     sci_str = format(args.true_sigma, ".0e")
     penalty = format(args.penalty, ".1e").replace(".", "_")
