@@ -75,8 +75,8 @@ class BaseSolver(ABC, PretrainedSolver, nn.Module):
         """
         variable_loss = 0.0
         variable_funcs = self.diff_eqs.compute_func_val(self.nets, variable_batch_t)
-        variable_funcs = torch.cat(variable_funcs, dim=1)  # [10, 5]
-        variable_loss += ((variable_funcs - batch_y) ** 2).mean()
+        I_pred = variable_funcs[1]   # second network = I(t)
+        variable_loss += ((I_pred - batch_y) ** 2).mean()
         
         total_loss = derivative_weight * derivative_loss + variable_loss
 
