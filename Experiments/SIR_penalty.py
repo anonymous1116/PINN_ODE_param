@@ -156,7 +156,7 @@ def main(args):
                     net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
                     net3=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv)
                     )
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     #            optimizer,
     #            mode="min",
