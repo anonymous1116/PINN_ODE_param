@@ -134,7 +134,7 @@ def main(args):
     
     ydata = ydataTruth[:, 1] + np.random.normal(0, true_sigma, ydataTruth[:, 0].size)
     
-    output_dir = f"../depot_hyun/hyun/ODE_param/SIR/sig{sci_str}/lambda_{penalty}"
+    output_dir = f"../depot_hyun/hyun/ODE_param/SIR/sig_{sci_str}/lambda_{penalty}"
     
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
