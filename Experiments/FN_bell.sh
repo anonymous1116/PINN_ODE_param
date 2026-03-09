@@ -5,7 +5,7 @@
 #SBATCH --account=statdept
 #SBATCH --time=04:00:00
 #SBATCH --qos=standby
-#SBATCH --array=0-99               # Create a job array with indices from 1 to 10
+#SBATCH --array=0-799               # Create a job array with indices from 1 to 10
 #SBATCH --output=output_log_training/output_log_%A_%a.out
 #SBATCH --error=output_log_training/error_log_%A_%a.txt
 
@@ -20,20 +20,19 @@ conda activate /depot/wangxiao/apps/hyun18/ODE
 SLURM_SUBMIT_DIR=/home/hyun18/PINN_ODE_param
 cd $SLURM_SUBMIT_DIR
 
-# Calculate seed and dim_out
-seed=$((SLURM_ARRAY_TASK_ID))
+# --- Logic for Seeds and Penalties ---
+# Define the 8 penalty values
+penalty_list=(30 50 75 100 150 200 300 500)
 
-penalty=500
-#python ./Experiments/FN_CV.py --seed $seed --true_sigma 2e-1
-#python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 2e-2 --penalty $penalty
-#python ./Experiments/FN_CV_individual.py --seed 1 --true_sigma 2e-1 --penalty 1.0e+00
+# Calculate which penalty to use (0 to 7)
+penalty_idx=$((SLURM_ARRAY_TASK_ID / 100))
+penalty=${penalty_list[$penalty_idx]}
 
-#python ./Experiments/PTrans_penalty.py --seed $seed --true_sigma 1e-2 --penalty $penalty
-#python ./Experiments/PTrans_CV_individual.py --seed $seed --true_sigma 1e-2 --penalty $penalty
-
+# Calculate which seed to use (0 to 99)
+seed=$((SLURM_ARRAY_TASK_ID % 100))
 
 #python ./Experiments/SIR_penalty.py --seed $seed --true_sigma 1 --penalty $penalty
-python ./Experiments/SIR_CV_individual.py --seed $seed --true_sigma 1 --penalty 50 
+python ./Experiments/SIR_CV_individual.py --seed $seed --true_sigma 1 --penalty $penalty
 #python ./Experiments/PTrans_CV.py --seed $seed --true_sigma 1e-1
 #python ./Experiments/PTrans_CV.py --seed $seed --true_sigma 1e-2
 #python ./Experiments/FN_SA2.py --seed 1 --true_sigma 2e-1 --penalty 1e+00
