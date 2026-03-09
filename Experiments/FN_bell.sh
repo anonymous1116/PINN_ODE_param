@@ -33,7 +33,7 @@ seed=$((SLURM_ARRAY_TASK_ID % 100))
 
 #python ./Experiments/SIR_penalty.py --seed $seed --true_sigma 1 --penalty $penalty
 #python ./Experiments/SIR_CV_individual.py --seed $seed --true_sigma 5 --penalty $penalty
-python ./Experiments/SIR_CV_optimal.py --seed $seed --true_sigma 5 --penalty 
+python ./Experiments/SIR_CV_optimal.py --seed $seed --true_sigma 1
 
 #python ./Experiments/PTrans_CV.py --seed $seed --true_sigma 1e-1
 #python ./Experiments/PTrans_CV.py --seed $seed --true_sigma 1e-2
