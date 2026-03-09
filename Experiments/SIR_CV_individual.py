@@ -135,7 +135,7 @@ def SIR_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable
             
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-        if epoch % 100 == 0:
+        if epoch % 50 == 0:
             print(f'Train Epoch: {epoch} '
                 f'\tLoss: {batch_loss.item():.6f}')
         optimizer.step()
