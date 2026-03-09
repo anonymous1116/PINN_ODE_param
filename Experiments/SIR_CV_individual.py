@@ -148,16 +148,27 @@ def SIR_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable
     best_model_copy.eval()
     #param_results = np.array([best_model_copy.diff_eqs.a.data, best_model_copy.diff_eqs.b.data, best_model_copy.diff_eqs.c.data])
 
+
     with torch.no_grad():
         estimate_t = torch.linspace(0., 100., 101)
         estimate_funcs = best_model_copy.diff_eqs.compute_func_val(best_model_copy.nets, [estimate_t.view(-1, 1)])
         estimate_funcs = torch.cat(estimate_funcs, dim=1)
     estimate_funcs = estimate_funcs.numpy()
 
-    CV_error = np.mean((estimate_funcs[val_idx,1] - obs_val.numpy()[:, 0]) ** 2)
-    del model_copy, best_model_copy
-    return CV_error
+    t_min = min(t)
+    t_max = max(t)    
+    new_derivative_batch_size = 2000
+    new_train_generator = SamplerGenerator(
+        Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
 
+    total, dloss, vloss = best_model_copy.compute_loss(
+        derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
+        variable_batch_t=[t[val_idx].view(-1, 1)],
+        batch_y=obs_val,
+        derivative_weight=penalty,
+        return_parts=True
+    )
+    return total, dloss, vloss
 
 
 def main(args):
@@ -165,6 +176,8 @@ def main(args):
     true_x0 = [90, 10, 0]
     true_sigma = args.true_sigma
     sci_str = format(args.true_sigma, ".1e").replace(".", "_")
+    penalty = format(args.penalty, ".1e").replace(".", "_")
+    
     
     print("sigma: ", sci_str)
     n = 101
@@ -191,10 +204,10 @@ def main(args):
     
     ydata = ydataTruth[:, 1] + np.random.normal(0, true_sigma, ydataTruth[:, 0].size)
     
-    output_dir = f"../depot_hyun/hyun/ODE_param/SIR/sig_{sci_str}/CV"
-    
+    output_dir = f"../depot_hyun/hyun/ODE_param/SIR/sig_{sci_str}/lambda_{penalty}_CV"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
+    
     
     t = torch.linspace(0., 100., n)  # torch.float32
     true_y = torch.from_numpy(ydata)  # torch.float64
@@ -219,119 +232,35 @@ def main(args):
     
     k_folds = 5
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
-    #penalty_list = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
-    penalty_list = [30.0, 50.0, 75.0, 100.0, 125.0, 150.0, 200.0, 300.0]
-    CV_error_list = []
+
+
     start_time = time.time()
     cumulative_time = 0
-    for penalty in penalty_list:
-        CV_error = 0
-        num = 0
-        for train_idx, val_idx in kfold.split(true_y):
-            print(f"penalty: {penalty}, CV: {num}/{k_folds}")
-            CV_error += SIR_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
-            num+=1
-            end_time = time.time()
-            cumulative_time+= end_time-start_time
-            print(f"cumulative time: {cumulative_time:.3f}" )
-        print("CV_error: ", CV_error)
-        CV_error_list.append(CV_error)
+    CV_l2_error = 0
+    CV_deri_error = 0
+    num = 0
+    penalty = args.penalty
+    for train_idx, val_idx in kfold.split(true_y):
+        print(f"penalty: {penalty}, CV: {num}/{k_folds}")
+        #_, CV_l2_error, CV_deri_error += FN_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10000)
+        results = SIR_CV(penalty, true_y, t, model, train_generator, train_idx, val_idx, variable_batch_size = 7, train_epochs = 10)
+        CV_deri_error += results[1] 
+        CV_l2_error += results[2]
+
+        num+=1
+        end_time = time.time()
+        cumulative_time+= end_time-start_time
+        print(f"cumulative time: {cumulative_time:.3f}" )
+
+    CV_l2_error_final =  CV_l2_error/k_folds ** (1/2)
+    CV_deri_error_final = (CV_deri_error/k_folds) ** (1/2)
+    print("CV_l2_error: ", CV_l2_error_final)
+    print("CV_deri_error: ", CV_deri_error_final)
+
+    np.save(f"{output_dir}/results/CV_l2_{s}.npy", float(CV_l2_error_final))
+    np.save(f"{output_dir}/results/CV_derivative_loss_{s}.npy", float(CV_deri_error_final))
     
-    CV_error_list = np.array(CV_error_list)
-
-    penalty_CV = penalty_list[np.argmin(CV_error_list)]
-    print("chosen lambda: ", penalty_CV)
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     
-    y_ind = np.arange(n)
-    train_epochs = 10000  # 10000
-    loss_history = []
-    #num_pilot = train_epochs/10
-    for epoch in range(train_epochs):
-        np.random.shuffle(y_ind)
-        epoch_loss = 0.0
-        batch_loss = 0.0
-        # model.train()
-        optimizer.zero_grad()
-        for i in range(0, n, variable_batch_size):
-            variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
-            batch_loss = model.compute_loss(
-                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([7, 1])
-                batch_y=true_y[variable_batch_id],  # [7, 2]
-                derivative_weight=penalty_CV
-                )
-            
-            batch_loss.backward()
-            epoch_loss += batch_loss.item()
-            if i % 100 == 0:
-                print(f'Train Epoch: {epoch} '
-                    f'[{i:05}/{n} '
-                    f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
-        #scheduler.step(batch_loss)
-        loss_history.append(epoch_loss)
-        if loss_history[-1] == min(loss_history):
-            best_model.load_state_dict(model.state_dict())
-
-    # check estimated parameters
-    best_model.eval()
-    param_results = np.array([best_model.diff_eqs.beta.data, best_model.diff_eqs.gamma.data])
-    print("param_results:", param_results)
-    # check estimated path
-    observed_ind = np.linspace(0, 2000, num=101, dtype=int)
-
-    with torch.no_grad():
-        estimate_t = torch.linspace(0., 100., 2001)
-        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
-        estimate_funcs = torch.cat(estimate_funcs, dim=1)
-    estimate_funcs = estimate_funcs.numpy()
-    #trajectory_RMSE = np.sqrt(np.mean((estimate_funcs[observed_ind, :] - ydataTruthFull[observed_ind, :]) ** 2,
-    #                                        axis=0))
-    trajectory_RMSE = np.sqrt(np.mean((estimate_funcs - ydataTruthFull) ** 2,
-                                            axis=0))
-    
-    dt = tvecObs[1] - tvecObs[0]
-
-    val_term = np.sum((estimate_funcs - ydataTruthFull) ** 2) * dt
-    print("val_term_part:", val_term)
-    tmp = fOde(theta = param_results, x = estimate_funcs[observed_ind,:], tvec = tvecObs)
-    dtrue = fOde(theta = true_theta, x = ydataTruth, tvec = estimate_t)
-    der_term = np.sum((tmp  - dtrue) ** 2)* dt
-    print("der_term_part:", der_term)
-    h1_part = np.sqrt(val_term + der_term)
-    print("H1: ", h1_part)
-    dt = estimate_t[1] - estimate_t[0]
-    
-    l2 = np.sqrt(np.mean((ydata - estimate_funcs[observed_ind, 1]) ** 2))
-    print("l2: ", l2)
-    best_model.eval()
-    #with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
-
-    new_derivative_batch_size = 2000
-    new_train_generator = SamplerGenerator(
-        Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
-
-    total, dloss, vloss = best_model.compute_loss(
-        derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
-        variable_batch_t=[t.view(-1, 1)],
-        batch_y=true_y,
-        derivative_weight=0.5,
-        return_parts=True
-    )
-    print("derivative_loss =", float(dloss ** (1/2)), "l2: ", vloss ** (1/2), "total: ", total)
-
-    
-    print(f"Simulation {s} completed")
-    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
-    np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
-    np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
-    np.save(f"{output_dir}/results/l2_{s}.npy", l2)
-    np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** (1/2)))
-    
-    print(f"Simulation {s} saved completed")
     
 
 def get_args():
@@ -340,6 +269,8 @@ def get_args():
                         help = "See number (default: 1)")
     parser.add_argument("--true_sigma", type = float, default = 0.2,
                         help = "observation errors (default: 0.2)")
+    parser.add_argument("--penalty", type = float, default = 0.8,
+                        help = "observation errors (default: 0.8)")
     return parser.parse_args()
 
 if __name__ == "__main__":
