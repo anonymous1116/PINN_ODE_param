@@ -260,6 +260,8 @@ def main(args):
     np.save(f"{output_dir}/results/CV_l2_{s}.npy", float(CV_l2_error_final))
     np.save(f"{output_dir}/results/CV_derivative_loss_{s}.npy", float(CV_deri_error_final))
     
+    print(f"Simulation {s} saved completed")
+    
     
     
 
