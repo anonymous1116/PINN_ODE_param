@@ -292,7 +292,6 @@ def main(args):
     l2 = np.sqrt(np.mean((true_y.numpy() - estimate_funcs[observed_ind, :]) ** 2))
 
     print(f"Simulation {s} completed")
-    np.save(f"{output_dir}/results/trajectory_RMSE_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
     np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE)
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", np.array(h1_part))
