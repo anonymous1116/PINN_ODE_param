@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=cpu
 #SBATCH --account=statdept
-#SBATCH --time=04:00:00
+#SBATCH --time=00:30:00
 #SBATCH --qos=standby
 #SBATCH --array=0-999               # Create a job array with indices from 1 to 10
 #SBATCH --output=output_log_training/output_log_%A_%a.out
@@ -22,7 +22,7 @@ cd $SLURM_SUBMIT_DIR
 
 # --- Logic for Seeds and Penalties ---
 # Define the 8 penalty values
-penalty_list=(0.05 0.1 10.0 20.0 30.0 50.0)
+penalty_list=(0.05 0.1 0.5 1.0 5.0 10.0 20.0 30.0 50.0 75.0)
 
 # Calculate which penalty to use (0 to 7)
 penalty_idx=$((SLURM_ARRAY_TASK_ID / 100))
@@ -32,7 +32,7 @@ penalty=${penalty_list[$penalty_idx]}
 seed=$((SLURM_ARRAY_TASK_ID % 100))
 
 
-python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 0.5 --penalty $penalty
+python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 1 --penalty $penalty
 #python ./Experiments/SIR_penalty.py --seed $seed --true_sigma 1 --penalty $penalty
 #python ./Experiments/SIR_CV_individual.py --seed $seed --true_sigma 5 --penalty $penalty
 #python ./Experiments/SIR_CV_optimal.py --seed $seed --true_sigma 1
