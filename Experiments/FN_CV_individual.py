@@ -215,6 +215,16 @@ def main(args):
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
+    output_dir_datasave = f"../depot_hyun/hyun/ODE_param/FN_sig{sci_str}"
+    os.makedirs(f"{output_dir_datasave}/ydata", exist_ok=True)
+    os.makedirs(f"{output_dir_datasave}/results", exist_ok=True)
+    
+    
+    np.save(f"{output_dir_datasave}/ydata/ydata_{s}.npy", ydata)
+    if s == 1:
+        np.save(f"{output_dir_datasave}/ydata/ydataTruthFull.npy", ydataTruthFull) #Full Trajectory
+        np.save(f"{output_dir_datasave}/ydata/ydataTruth.npy", ydataTruth) # Trajectory within observed time
+    
     
     t = torch.linspace(0., 20., n)  # torch.float32
     true_y = torch.from_numpy(ydata)  # torch.float64
