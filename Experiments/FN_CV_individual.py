@@ -221,7 +221,7 @@ def main(args):
     
     
     np.save(f"{output_dir_datasave}/ydata/ydata_{s}.npy", ydata)
-    np.savetxt(f"{output_dir_datasave}/ydata/ydata_{s}.txt", ydataTruthFull, fmt ="%.8f", delimiter="\t")
+    np.savetxt(f"{output_dir_datasave}/ydata/ydata_{s}.txt", ydata, fmt ="%.8f", delimiter="\t")
     if s == 1:
         np.save(f"{output_dir_datasave}/ydata/ydataTruthFull.npy", ydataTruthFull) #Full Trajectory
         np.save(f"{output_dir_datasave}/ydata/ydataTruth.npy", ydataTruth) # Trajectory within observed time
