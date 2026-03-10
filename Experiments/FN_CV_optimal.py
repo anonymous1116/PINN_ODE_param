@@ -211,7 +211,7 @@ def main(args):
                     net1=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv),
                     net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
     
-    penalty_list = [0.1, 0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 50.0]
+    penalty_list = [0.05, 0.1, 0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 50.0]
     CV_error_list = []
     for j in range(len(penalty_list)):
         penalty = penalty_list[j]

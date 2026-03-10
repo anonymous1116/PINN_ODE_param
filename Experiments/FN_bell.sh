@@ -5,7 +5,7 @@
 #SBATCH --account=statdept
 #SBATCH --time=01:30:00
 #SBATCH --qos=standby
-#SBATCH --array=0-899               # Create a job array with indices from 1 to 10
+#SBATCH --array=0-99               # Create a job array with indices from 1 to 10
 #SBATCH --output=output_log_training/output_log_%A_%a.out
 #SBATCH --error=output_log_training/error_log_%A_%a.txt
 
@@ -32,8 +32,8 @@ penalty=${penalty_list[$penalty_idx]}
 seed=$((SLURM_ARRAY_TASK_ID % 100))
 
 
-python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 0.1 --penalty $penalty
-#python ./Experiments/FN_CV_optimal.py --seed $seed --true_sigma 0.5 
+#python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 0.1 --penalty $penalty
+python ./Experiments/FN_CV_optimal.py --seed $seed --true_sigma 0.1 
 #python ./Experiments/SIR_penalty.py --seed $seed --true_sigma 1 --penalty $penalty
 #python ./Experiments/SIR_CV_individual.py --seed $seed --true_sigma 5 --penalty $penalty
 #python ./Experiments/SIR_CV_optimal.py --seed $seed --true_sigma 1
