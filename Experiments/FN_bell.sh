@@ -22,7 +22,7 @@ cd $SLURM_SUBMIT_DIR
 
 # --- Logic for Seeds and Penalties ---
 # Define the 8 penalty values
-penalty_list=(0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0)
+penalty_list=(0.05 0.1 10.0 20.0 30.0 50.0)
 
 # Calculate which penalty to use (0 to 7)
 penalty_idx=$((SLURM_ARRAY_TASK_ID / 100))
