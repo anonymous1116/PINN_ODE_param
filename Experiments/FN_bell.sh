@@ -33,8 +33,8 @@ penalty=${penalty_list[$penalty_idx]}
 seed=$((SLURM_ARRAY_TASK_ID % 100))
 
 
-python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 0.5 --penalty $penalty
-#python ./Experiments/FN_CV_optimal.py --seed $seed --true_sigma 0.5 
+#python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 0.5 --penalty $penalty
+python ./Experiments/FN_CV_optimal.py --seed $seed --true_sigma 0.5 
 #python ./Experiments/FN_penalty.py --seed $seed --true_sigma 0.1 --penalty 1
 
 #python ./Experiments/SIR_penalty.py --seed $seed --true_sigma 1 --penalty $penalty
