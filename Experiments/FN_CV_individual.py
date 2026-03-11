@@ -225,7 +225,7 @@ def main(args):
     if s == 1:
         np.save(f"{output_dir_datasave}/ydata/ydataTruthFull.npy", ydataTruthFull) #Full Trajectory
         np.save(f"{output_dir_datasave}/ydata/ydataTruth.npy", ydataTruth) # Trajectory within observed time
-        np.savetxt(f"{output_dir_datasave}/ydataTruth.txt", ydataTruth, fmt ="%.8f", delimiter="\t")
+        np.savetxt(f"{output_dir_datasave}/ydata/ydataTruth.txt", ydataTruth, fmt ="%.8f", delimiter="\t")
     
     
     t = torch.linspace(0., 20., n)  # torch.float32
