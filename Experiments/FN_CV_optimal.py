@@ -212,7 +212,8 @@ def main(args):
                     net2=FCNN(n_input_units=1, n_output_units=1, hidden_units=[64, 64], actv=SinActv))
     
     #penalty_list = [0.03, 0.05, 0.1, 0.3, 0.5, 1.0] # sigma = 0.1
-    penalty_list = [5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25] #sigma = 0.5
+    #penalty_list = [5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25] #sigma = 0.5
+    penalty_list = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1] #sigma = 0.5
     
     CV_error_list = []
     for j in range(len(penalty_list)):
