@@ -32,7 +32,8 @@ class ODESystem(nn.Module):
         self.register_buffer("R0", torch.tensor(1.0))
         self.register_buffer("SR0", torch.tensor(0.0))
         self.register_buffer("Rpp0", torch.tensor(0.0))
-        
+        self.initial_conditions = [self.S0, self.Sd0, self.R0, self.SR0, self.Rpp0]
+
         
     def compute_derivative(self, S, Sd, R, SR, Rpp, t):
         """S.shape = [batch, 1]
