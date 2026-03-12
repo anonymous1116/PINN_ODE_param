@@ -277,7 +277,7 @@ def main(args):
 
     model.load_state_dict(best_model.state_dict())
     model.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)  # 12e-3
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
     train_epochs = 10000
