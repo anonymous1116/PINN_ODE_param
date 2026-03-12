@@ -19,22 +19,47 @@ class ODESystem(nn.Module):
         self.k4 = nn.Parameter(torch.tensor(0.3))
         self.V = nn.Parameter(torch.tensor(0.017))
         self.Km = nn.Parameter(torch.tensor(0.3))
-        self.S0 = nn.Parameter(torch.tensor(1.))
-        self.Sd0 = nn.Parameter(torch.tensor(0.))
-        self.R0 = nn.Parameter(torch.tensor(1.))
-        self.SR0 = nn.Parameter(torch.tensor(0.))
-        self.Rpp0 = nn.Parameter(torch.tensor(0.))
+        #self.S0 = nn.Parameter(torch.tensor(1.))
+        #self.Sd0 = nn.Parameter(torch.tensor(0.))
+        #self.R0 = nn.Parameter(torch.tensor(1.))
+        #self.SR0 = nn.Parameter(torch.tensor(0.))
+        #self.Rpp0 = nn.Parameter(torch.tensor(0.))
+        self.register_buffer("S0", torch.tensor(1.0))
+        self.register_buffer("Sd0", torch.tensor(0.0))
+        self.register_buffer("R0", torch.tensor(1.0))
+        self.register_buffer("SR0", torch.tensor(0.0))
+        self.register_buffer("Rpp0", torch.tensor(0.0))
+        
+        
         self.initial_conditions = [self.S0, self.Sd0, self.R0, self.SR0, self.Rpp0]
 
-    def compute_derivative(self, S, Sd, R, SR, Rpp, t):
-        """S.shape = [batch, 1]
-        t.shape = [batch, 1]
-        """
-        return [diff(S, t) + self.k1 * S + self.k2 * S * R - self.k3 * SR, diff(Sd, t) - self.k1 * S,
-                diff(R, t) + self.k2 * S * R - self.k3 * SR - self.V * Rpp / (self.Km + Rpp),
-                diff(SR, t) - self.k2 * S * R + self.k3 * SR + self.k4 * SR,
-                diff(Rpp, t) - self.k4 * SR + self.V * Rpp / (self.Km + Rpp)]
+    #def compute_derivative(self, S, Sd, R, SR, Rpp, t):
+    #    """S.shape = [batch, 1]
+    #    t.shape = [batch, 1]
+    #    """
+    #    return [diff(S, t) + self.k1 * S + self.k2 * S * R - self.k3 * SR, diff(Sd, t) - self.k1 * S,
+    #            diff(R, t) + self.k2 * S * R - self.k3 * SR - self.V * Rpp / (self.Km + Rpp),
+    #            diff(SR, t) - self.k2 * S * R + self.k3 * SR + self.k4 * SR,
+    #            diff(Rpp, t) - self.k4 * SR + self.V * Rpp / (self.Km + Rpp)]
 
+    def compute_derivative(self, S, Sd, R, SR, Rpp, t):
+        k1 = torch.nn.functional.softplus(self.k1)
+        k2 = torch.nn.functional.softplus(self.k2)
+        k3 = torch.nn.functional.softplus(self.k3)
+        k4 = torch.nn.functional.softplus(self.k4)
+        V = torch.nn.functional.softplus(self.V)
+        Km = torch.nn.functional.softplus(self.Km)
+
+        denom = torch.clamp(Km + Rpp, min=1e-12)
+
+        return [
+            diff(S, t) + k1 * S + k2 * S * R - k3 * SR,
+            diff(Sd, t) - k1 * S,
+            diff(R, t) + k2 * S * R - k3 * SR - V * Rpp / denom,
+            diff(SR, t) - k2 * S * R + k3 * SR + k4 * SR,
+            diff(Rpp, t) - k4 * SR + V * Rpp / denom,
+        ]
+        
     def compute_func_val(self, nets, derivative_batch_t):
         t_0 = 0.0
         rslt = []
