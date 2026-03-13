@@ -22,7 +22,7 @@ cd $SLURM_SUBMIT_DIR
 
 # --- Logic for Seeds and Penalties ---
 # Define the 8 penalty values
-penalty_list=(0.0005 0.005 0.05 0.5 5)
+penalty_list=(0.00001 0.0005)
 #penalty_list=(0.0001 0.001 0.01 0.1 1 0.0005 0.005 0.05 0.5)
 #penalty_list=(3 5 10 30 50 100 300 500)
 
@@ -37,7 +37,7 @@ seed=$((SLURM_ARRAY_TASK_ID % 100))
 #python ./Experiments/FN_CV_individual.py --seed $seed --true_sigma 0.05 --penalty $penalty
 #python ./Experiments/FN_CV_optimal.py --seed $seed --true_sigma 0.05 
 #python ./Experiments/FN_penalty.py --seed $seed --true_sigma 0.1 --penalty 1
-python ./Experiments/PTrans_CV_individual.py --seed $seed --true_sigma 0.1 --penalty $penalty
+python ./Experiments/PTrans_CV_individual.py --seed $seed --true_sigma 0.01 --penalty $penalty
 #python ./Experiments/PTrans_penalty.py --seed $seed --true_sigma 0.1 --penalty $penalty
 
 #python ./Experiments/SIR_penalty.py --seed $seed --true_sigma 1 --penalty $penalty
