@@ -457,15 +457,15 @@ def main(args):
     best_model.eval()
     #with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
 
-    new_derivative_batch_size = 2000
+    new_derivative_batch_size = 1000
     new_train_generator = SamplerGenerator(
         Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
 
     total, dloss, vloss = best_model.compute_loss(
         derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
-        variable_batch_t=[t.view(-1, 1)],
+        variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32).view(-1, 1)],
         batch_y=torch.from_numpy(ydata),
-        derivative_weight=0.5,
+        derivative_weight= penalty_CV,
         return_parts=True
     )
     print("derivative_loss =", float(dloss ** (1/2)), "l2: ", vloss ** (1/2), "total: ", total)
