@@ -375,7 +375,7 @@ def main(args):
 
     model.load_state_dict(best_model.state_dict())
     model.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # 12e-3
+    optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
     train_epochs = 10000
@@ -477,6 +477,7 @@ def main(args):
     np.save(f"{output_dir}/results/h1_errors_{s}.npy", float(h1_error))
     np.save(f"{output_dir}/results/l2_{s}.npy", l2)
     np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** (1/2)))
+    np.save(f"{output_dir}/results/lambda_{s}.npy", penalty_CV)
     
     print(f"Simulation {s} saved completed")
     
