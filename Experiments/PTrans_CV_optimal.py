@@ -349,11 +349,11 @@ def main(args):
                 derivative_weight= penalty_CV)  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
+            optimizer.step()
         if epoch % 100 == 0:
             print(f'Train Epoch: {epoch} '
                     f'[{epoch}/{train_epochs} '
                     f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
@@ -397,12 +397,11 @@ def main(args):
                 derivative_weight=penalty_CV )  # 0.05
             batch_loss.backward()
             epoch_loss += batch_loss.item()
-        optimizer.step()
+            optimizer.step()
         if epoch % 100 == 0:
             print(f'Train Epoch: {epoch} '
                 f'[{epoch}/{train_epochs}] '
                 f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
         loss_history.append(epoch_loss)
         if loss_history[-1] == min(loss_history):
             best_model.load_state_dict(model.state_dict())
