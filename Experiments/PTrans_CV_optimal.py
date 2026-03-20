@@ -331,7 +331,7 @@ def main(args):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
     y_ind = np.arange(n)
-    train_epochs = 5000
+    train_epochs = 5
     loss_history = []
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -378,7 +378,7 @@ def main(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
-    train_epochs = 10000
+    train_epochs = 10
     
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
@@ -464,7 +464,7 @@ def main(args):
     total, dloss, vloss = best_model.compute_loss(
         derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
         variable_batch_t=[t.view(-1, 1)],
-        batch_y=true_y,
+        batch_y=torch.from_numpy(ydata),
         derivative_weight=0.5,
         return_parts=True
     )
