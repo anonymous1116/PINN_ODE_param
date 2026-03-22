@@ -187,9 +187,7 @@ def main(args):
     ydataTruthFull = np.zeros((n, 5))
     for j in range(5):
         ydataTruthFull[:, j] = np.interp(tvecFull, tvecObs, ydataTruth[:, j])
-    trajectory_RMSE = np.zeros((100, 5))
-    trajectory = np.zeros((100, n, 5))
-
+    
     s = args.seed
 
     np.random.seed(SEED[s, 0].data)
@@ -198,7 +196,7 @@ def main(args):
     sci_str = format(args.true_sigma, ".0e")
     penalty = format(args.penalty, ".1e").replace(".", "_")
     
-    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans_sig{sci_str}/lambda_{penalty}"
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans2_sig{sci_str}/lambda_{penalty}"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
@@ -216,7 +214,7 @@ def main(args):
     t_min = 0.0
     t_max = 100.0
     variable_batch_size = 10
-    derivative_batch_size = 100
+    derivative_batch_size = 1000
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     model = BaseSolver(diff_eqs=ODESystem(),
@@ -232,50 +230,7 @@ def main(args):
                             net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
-    y_ind = np.arange(n)
-    train_epochs = 5000
-    loss_history = []
-    for epoch in range(train_epochs):
-        np.random.shuffle(y_ind)
-        epoch_loss = 0.0
-        batch_loss = 0.0
-        # model.train()
-        optimizer.zero_grad()
-        for i in range(0, n, variable_batch_size):
-            variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
-            batch_loss = model.compute_loss(
-                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
-                batch_y=true_y[variable_batch_id],  # [10, 5]
-                derivative_weight=args.penalty)  # 0.05
-            batch_loss.backward()
-            epoch_loss += batch_loss.item()
-        if epoch % 100 == 0:
-            print(f'Train Epoch: {epoch} '
-                    f'[{epoch}/{train_epochs} '
-                    f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
-        loss_history.append(epoch_loss)
-        if loss_history[-1] == min(loss_history):
-            best_model.load_state_dict(model.state_dict())
-
-    # check estimated path using 101 points
-    with torch.no_grad():
-        estimate_t = torch.linspace(0., 100., n)
-        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
-        estimate_funcs = torch.cat(estimate_funcs, dim=1).numpy()
-
-        estimate_t_1000 = torch.linspace(0., 100., 1001)
-        estimate_funcs_1000 = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t_1000.view(-1, 1)])
-        estimate_funcs_1000 = torch.cat(estimate_funcs_1000, dim=1).numpy()
     
-    best_model.eval()
-    k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
-    param_results = torch.tensor([k1, k2, k3, k4, V, Km])  # (N,5)
-    
-
-    model.load_state_dict(best_model.state_dict())
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # 12e-3
     y_ind = np.arange(len(tvecObs))
