@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=cpu
 #SBATCH --account=statdept
-#SBATCH --time=01:30:00
+#SBATCH --time=00:30:00
 #SBATCH --qos=standby
 #SBATCH --array=0-99               # Create a job array with indices from 1 to 10
 #SBATCH --output=output_log_training/output_log_%A_%a.out
@@ -38,8 +38,9 @@ seed=$((SLURM_ARRAY_TASK_ID % 100))
 #python ./Experiments/FN_CV_optimal.py --seed $seed --true_sigma 0.05 
 #python ./Experiments/FN_penalty.py --seed $seed --true_sigma 0.1 --penalty 1
 #python ./Experiments/PTrans_CV_individual.py --seed $seed --true_sigma 0.01 --penalty $penalty
-python ./Experiments/PTrans_CV_optimal.py --seed $seed --true_sigma 0.05
+#python ./Experiments/PTrans_CV_optimal.py --seed $seed --true_sigma 0.05
 #python ./Experiments/PTrans_penalty.py --seed $seed --true_sigma 0.1 --penalty $penalty
+python ./Experiments/PTrans_penalty2.py --seed $seed --true_sigma 0.01 --penalty 1.0
 
 #python ./Experiments/SIR_penalty.py --seed $seed --true_sigma 1 --penalty $penalty
 #python ./Experiments/SIR_CV_individual.py --seed $seed --true_sigma 5 --penalty $penalty
