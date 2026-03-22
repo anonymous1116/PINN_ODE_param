@@ -123,107 +123,6 @@ def fOde(theta, x, tvec=None, eps=1e-12):
     return np.stack([dS, dSd, dR, dSR, dRpp], axis=1)
 
 
-
-def PTrans_pretrain(penalty, extended_obs, t, model, train_generator, variable_batch_size=10, train_epochs = 5000):
-    model_copy = copy.deepcopy(model)
-    best_model_copy = copy.deepcopy(model)
-    optimizer = torch.optim.Adam(model_copy.parameters(), lr=9e-3)
-    n = len(t)
-    y_ind = np.arange(n)
-    
-    loss_history = []
-    for epoch in range(train_epochs):
-        np.random.shuffle(y_ind)
-        epoch_loss = 0.0
-        batch_loss = 0.0
-        model_copy.train()
-        optimizer.zero_grad()
-        for i in range(0, n, variable_batch_size):
-            variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
-            batch_loss = model_copy.compute_loss(
-                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[t[variable_batch_id].view(-1, 1)],  # list([10, 1])
-                batch_y=extended_obs[variable_batch_id],  # [10, 5]
-                derivative_weight=penalty)  # 0.05
-            batch_loss.backward()
-            epoch_loss += batch_loss.item()
-        if epoch % 100 == 0:
-            print(f'Train Epoch: {epoch} '
-                    f'[{epoch}/{train_epochs} '
-                    f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
-        loss_history.append(epoch_loss)
-        if loss_history[-1] == min(loss_history):
-            best_model_copy.load_state_dict(model_copy.state_dict())
-
-    return best_model_copy.state_dict()
-    
-
-def PTrans_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 10, train_epochs = 10000):
-    model_copy = copy.deepcopy(model)
-    best_model_copy = copy.deepcopy(model)
-    optimizer = torch.optim.Adam(model_copy.parameters(), lr=9e-3)
-    y_ind = np.arange(len(train_idx))
-    obs_train = obs[train_idx]
-    obs_val = obs[val_idx]
-    loss_history = []
-
-    time_train = t[train_idx]
-
-    # adfasdfasfdfdf 
-    for epoch in range(train_epochs):
-        np.random.shuffle(y_ind)
-        epoch_loss = 0.0
-        batch_loss = 0.0
-        model_copy.train()
-        optimizer.zero_grad()
-        for i in range(0, len(y_ind), variable_batch_size):
-            variable_batch_id = y_ind[i:(i + variable_batch_size)]
-            # optimizer.zero_grad()
-            batch_loss = model_copy.compute_loss(
-                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  # list([100, 1])
-                variable_batch_t=[time_train[variable_batch_id].view(-1, 1)],  # list([7, 1])
-                batch_y=obs_train[variable_batch_id],  # [7, 2]
-                derivative_weight=penalty
-                )
-            
-            batch_loss.backward()
-            epoch_loss += batch_loss.item()
-        if epoch % 100 == 0:
-            print(f'Train Epoch: {epoch} '
-                f'\tLoss: {batch_loss.item():.6f}')
-        optimizer.step()
-        #scheduler.step(batch_loss)
-        loss_history.append(epoch_loss)
-        if loss_history[-1] == min(loss_history):
-            best_model_copy.load_state_dict(model_copy.state_dict())
-
-    # check estimated path
-    best_model_copy.eval()
-    #param_results = np.array([best_model_copy.diff_eqs.a.data, best_model_copy.diff_eqs.b.data, best_model_copy.diff_eqs.c.data])
-
-    with torch.no_grad():
-        estimate_t = torch.linspace(0., 20., 41)
-        estimate_funcs = best_model_copy.diff_eqs.compute_func_val(best_model_copy.nets, [estimate_t.view(-1, 1)])
-        estimate_funcs = torch.cat(estimate_funcs, dim=1)
-    estimate_funcs = estimate_funcs.numpy()
-
-    t_min = min(t)
-    t_max = max(t)    
-    new_derivative_batch_size = 2000
-    new_train_generator = SamplerGenerator(
-        Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
-
-    total, dloss, vloss = best_model_copy.compute_loss(
-        derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
-        variable_batch_t=[t[val_idx].view(-1, 1)],
-        batch_y=obs_val,
-        derivative_weight=penalty,
-        return_parts=True
-    )
-    return total, dloss, vloss
-
 def main(args):
     ydataTruth = [[1, 0.588261834720057, 0.405587021811379,
                 0.233954596382738, 0.185824926227245, 0.121529475508475, 0.0660579216704765,
@@ -319,10 +218,10 @@ def main(args):
     print(penalty_CV)
 
     model.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
-    train_epochs = 10000
+    train_epochs = 15000
     
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)

@@ -204,8 +204,6 @@ def main(args):
                             net3=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                             net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
-    optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
-    
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # 12e-3
     y_ind = np.arange(len(tvecObs))
