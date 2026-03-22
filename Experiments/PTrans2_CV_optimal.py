@@ -16,19 +16,25 @@ import argparse, os
 class ODESystem(nn.Module):
     def __init__(self):
         super().__init__()
-        self.k1 = nn.Parameter(torch.tensor(0.5))
-        self.k2 = nn.Parameter(torch.tensor(0.5))
-        self.k3 = nn.Parameter(torch.tensor(0.5))
-        self.k4 = nn.Parameter(torch.tensor(0.5))
-        self.V = nn.Parameter(torch.tensor(0.5))
-        self.Km = nn.Parameter(torch.tensor(0.5))
-        self.S0 = nn.Parameter(torch.tensor(1.))
-        self.Sd0 = nn.Parameter(torch.tensor(0.))
-        self.R0 = nn.Parameter(torch.tensor(1.))
-        self.SR0 = nn.Parameter(torch.tensor(0.))
-        self.Rpp0 = nn.Parameter(torch.tensor(0.))
+        self.k1 = nn.Parameter(torch.tensor(0.07))
+        self.k2 = nn.Parameter(torch.tensor(0.6))
+        self.k3 = nn.Parameter(torch.tensor(0.05))
+        self.k4 = nn.Parameter(torch.tensor(0.3))
+        self.V = nn.Parameter(torch.tensor(0.017))
+        self.Km = nn.Parameter(torch.tensor(0.3))
+        #self.S0 = nn.Parameter(torch.tensor(1.))
+        #self.Sd0 = nn.Parameter(torch.tensor(0.))
+        #self.R0 = nn.Parameter(torch.tensor(1.))
+        #self.SR0 = nn.Parameter(torch.tensor(0.))
+        #self.Rpp0 = nn.Parameter(torch.tensor(0.))
+        self.register_buffer("S0", torch.tensor(1.0))
+        self.register_buffer("Sd0", torch.tensor(0.0))
+        self.register_buffer("R0", torch.tensor(1.0))
+        self.register_buffer("SR0", torch.tensor(0.0))
+        self.register_buffer("Rpp0", torch.tensor(0.0))
         self.initial_conditions = [self.S0, self.Sd0, self.R0, self.SR0, self.Rpp0]
 
+        
     def compute_derivative(self, S, Sd, R, SR, Rpp, t):
         """S.shape = [batch, 1]
         t.shape = [batch, 1]
@@ -48,7 +54,6 @@ class ODESystem(nn.Module):
             new_network_output = u_0 + (1 - torch.exp(-torch.cat(derivative_batch_t, dim=1) + t_0)) * network_output
             rslt.append(new_network_output)
         return rslt
-
 
 
 class BaseSolver(ABC, PretrainedSolver, nn.Module):
@@ -270,9 +275,8 @@ def main(args):
     torch.manual_seed(SEED[s, 0].data)
 
     sci_str = format(args.true_sigma, ".0e")
-    penalty = format(args.penalty, ".1e").replace(".", "_")
     
-    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans2_sig{sci_str}/lambda_{penalty}_CV"
+    output_dir = f"../depot_hyun/hyun/ODE_param/PTrans2_sig{sci_str}/CV_optimal"
     os.makedirs(f"{output_dir}/ydata", exist_ok=True)
     os.makedirs(f"{output_dir}/results", exist_ok=True)
     
@@ -284,7 +288,10 @@ def main(args):
         ydataFull[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])  # [101, 5]
     t = torch.linspace(0., 100., n)  # torch.float32
     y_interpolate = torch.from_numpy(ydataFull)  # torch.float64
-    
+
+
+
+
     t_min = 0.0
     t_max = 100.0
     variable_batch_size = 10
@@ -297,40 +304,133 @@ def main(args):
                        net3=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                        net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                        net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
+    best_model = BaseSolver(diff_eqs=ODESystem(),
+                            net1=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
+                            net2=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
+                            net3=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
+                            net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
+                            net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     
-    k_folds = 5
-    kfold = KFold(n_splits=k_folds, shuffle=True, random_state=2726)
-    start_time = time.time()
-    cumulative_time = 0
-    CV_l2_error = 0
-    CV_deri_error = 0
-    num = 0
+    penalty_list = [0.0001, 0.001, 0.01, 0.1, 1, 10] #sigma = 0.5
     
-    # pretrain
-    model_pretrain = copy.deepcopy(model)
-    #pretrain_dict = PTrans_pretrain(args.penalty, y_interpolate, t, model_pretrain, train_generator, variable_batch_size = 10, train_epochs = 5000) #5000
-    #model_pretrain.load_state_dict(pretrain_dict)
+    CV_error_list = []
+    for j in range(len(penalty_list)):
+        penalty = penalty_list[j]
+        penalty_char = format(penalty, ".1e").replace(".", "_")
+        CV_dir = f"../depot_hyun/hyun/ODE_param/PTrans2_sig{sci_str}/lambda_{penalty_char}_CV"
+        CV_error_list.append(np.load(f"{CV_dir}/results/CV_l2_{s}.npy"))
+        
+    penalty_CV = penalty_list[np.argmin(CV_error_list)]
     
-    for train_idx, val_idx in kfold.split(ydata):
-        print(f"penalty: {args.penalty}, CV: {num}/{k_folds}")
-        results = PTrans_CV(args.penalty, torch.from_numpy(ydata), t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 10, train_epochs = 10000) #10000
-        num+=1
-
-        CV_deri_error += results[1] 
-        CV_l2_error += results[2]
-
-        end_time = time.time()
-        cumulative_time+= end_time-start_time
-        print(f"cumulative time: {cumulative_time:.3f}" )
-
-    CV_l2_error_final =  CV_l2_error/k_folds ** (1/2)
-    CV_deri_error_final = (CV_deri_error/k_folds) ** (1/2)
-    print("CV_l2_error: ", CV_l2_error_final)
-    print("CV_deri_error: ", CV_deri_error_final)
-
-    np.save(f"{output_dir}/results/CV_l2_{s}.npy", float(CV_l2_error_final))
-    np.save(f"{output_dir}/results/CV_derivative_loss_{s}.npy", float(CV_deri_error_final))
     
+    CV_error_list = np.array(CV_error_list)
+
+    penalty_CV = penalty_list[np.argmin(CV_error_list)]
+    print(penalty_CV)
+
+    model.train()
+    optimizer = torch.optim.Adam(model.parameters(), lr=9e-3)  # 12e-3
+    y_ind = np.arange(len(tvecObs))
+    loss_history = []
+    train_epochs = 10000
+    
+    for epoch in range(train_epochs):
+        np.random.shuffle(y_ind)
+        epoch_loss = 0.0
+        batch_loss = 0.0
+        # model.train()
+        
+        optimizer.zero_grad()
+        for i in range(0, len(y_ind), variable_batch_size):
+            variable_batch_id = y_ind[i:(i + variable_batch_size)]
+            
+            batch_loss = model.compute_loss(
+                derivative_batch_t=[s.reshape(-1, 1) for s in train_generator.get_examples()],  
+                variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32)[variable_batch_id].view(-1, 1)], 
+                batch_y=torch.from_numpy(ydata)[variable_batch_id],  # [10, 5]
+                derivative_weight=penalty_CV )  # 0.05
+            batch_loss.backward()
+            epoch_loss += batch_loss.item()
+            optimizer.step()
+        if epoch % 100 == 0:
+            print(f'Train Epoch: {epoch} '
+                f'[{epoch}/{train_epochs}] '
+                f'\tLoss: {batch_loss.item():.6f}')
+        loss_history.append(epoch_loss)
+        if loss_history[-1] == min(loss_history):
+            best_model.load_state_dict(model.state_dict())
+
+
+    # check estimated path using 101 points
+    best_model.eval()
+    with torch.no_grad():
+        estimate_t = torch.linspace(0., 100., n)
+        estimate_funcs = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t.view(-1, 1)])
+        estimate_funcs = torch.cat(estimate_funcs, dim=1).numpy()
+
+        estimate_t_1000 = torch.linspace(0., 100., 1001)
+        estimate_funcs_1000 = best_model.diff_eqs.compute_func_val(best_model.nets, [estimate_t_1000.view(-1, 1)])
+        estimate_funcs_1000 = torch.cat(estimate_funcs_1000, dim=1).numpy()
+
+    true_trajectory_100 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_100.txt", header=None)
+    true_trajectory_100 = torch.tensor(true_trajectory_100.to_numpy()[:,1:6], dtype = torch.float32)
+    #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
+    trajectory_RMSE_100 = np.sqrt(np.mean((estimate_funcs-true_trajectory_100.numpy())**2, axis=0))
+    
+    true_trajectory_1000 = pd.read_table(f"../depot_hyun/hyun/ODE_param/PTrans_trajectory_1000.txt", header=None)
+    true_trajectory_1000 = torch.tensor(true_trajectory_1000.to_numpy()[:,1:6], dtype = torch.float32)
+    #estimate_funcs = torch.tensor(estimate_funcs, dtype = torch.flaot32)
+    trajectory_RMSE_1000 = np.sqrt(np.mean((estimate_funcs_1000-true_trajectory_1000.numpy())**2, axis=0))
+    
+
+    # save
+    print(f"Simulation {s} finished")
+    print(f"trajectory_RMSE_100_after: {trajectory_RMSE_100}", flush=True)
+    print(f"trajectory_RMSE_1000_after: {trajectory_RMSE_1000}", flush=True)
+    
+    
+    best_model.eval()
+    k1, k2, k3, k4, V, Km = best_model.diff_eqs.k1.data, best_model.diff_eqs.k2.data, best_model.diff_eqs.k3.data, best_model.diff_eqs.k4.data, best_model.diff_eqs.V.data, best_model.diff_eqs.Km.data
+    param_results = torch.tensor([k1, k2, k3, k4, V, Km])  # (N,5)
+    print("param_results", param_results)
+    dt = estimate_t[1] - estimate_t[0]
+
+    val_term = np.sum((estimate_funcs - true_trajectory_100.numpy()) ** 2) * dt
+    print("val_term_part:", val_term)
+    dX_hat = fOde(theta = param_results, x = estimate_funcs, tvec = estimate_t)
+    dtrue = fOde(theta= theta_true, x=true_trajectory_100, tvec=estimate_t)
+
+    der_term = np.sum((dX_hat  - dtrue) ** 2)* dt
+    print("der_term_part:", der_term)
+    h1_error = np.sqrt(val_term + der_term)
+    print("h1_error: ", h1_error)
+    
+    l2 = np.sqrt(np.mean((ydata - estimate_funcs[tvecObs, :]) ** 2))
+    print("l2: ", l2)
+    best_model.eval()
+    #with torch.no_grad():  # <-- IMPORTANT: only if you *don't* need gradients here
+
+    new_derivative_batch_size = 1000
+    new_train_generator = SamplerGenerator(
+        Generator1D(size=new_derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
+
+    total, dloss, vloss = best_model.compute_loss(
+        derivative_batch_t=[s.reshape(-1, 1) for s in new_train_generator.get_examples()],
+        variable_batch_t=[torch.tensor(tvecObs,dtype = torch.float32).view(-1, 1)],
+        batch_y=torch.from_numpy(ydata),
+        derivative_weight= penalty_CV,
+        return_parts=True
+    )
+    print("derivative_loss =", float(dloss ** (1/2)), "l2: ", vloss ** (1/2), "total: ", total)
+
+    
+    print(f"Simulation {s} completed")
+    np.save(f"{output_dir}/results/trajectory_{s}.npy", trajectory_RMSE_100)
+    np.save(f"{output_dir}/results/param_results_{s}.npy", param_results)
+    np.save(f"{output_dir}/results/h1_errors_{s}.npy", float(h1_error))
+    np.save(f"{output_dir}/results/l2_{s}.npy", l2)
+    np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** (1/2)))
+    np.save(f"{output_dir}/results/lambda_{s}.npy", penalty_CV)
     
     print(f"Simulation {s} saved completed")
     
@@ -342,8 +442,6 @@ def get_args():
                         help = "See number (default: 1)")
     parser.add_argument("--true_sigma", type = float, default = 0.01,
                         help = "observation errors (default: 0.01)")
-    parser.add_argument("--penalty", type = float, default = 0.1,
-                        help = "observation errors (default: 0.1)")
     return parser.parse_args()
 
 if __name__ == "__main__":
