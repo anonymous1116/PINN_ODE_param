@@ -281,11 +281,6 @@ def main(args):
     ydataFull = np.zeros((n, 5))
     for j in range(5):
         ydataFull[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])  # [101, 5]
-    t = torch.linspace(0., 100., n)  # torch.float32
-    y_interpolate = torch.from_numpy(ydataFull)  # torch.float64
-
-
-
 
     t_min = 0.0
     t_max = 100.0
