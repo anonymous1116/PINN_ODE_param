@@ -209,14 +209,14 @@ def main(args):
     ydataFull = np.zeros((n, 5))
     for j in range(5):
         ydataFull[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])  # [101, 5]
-    t = torch.linspace(0., 100., n)  # torch.float32
+    t = torch.linspace(0., 100., 201)  # torch.float32
     true_y = torch.from_numpy(ydataFull)  # torch.float64
     
     
     t_min = 0.0
     t_max = 100.0
     variable_batch_size = 10
-    derivative_batch_size = 1000
+    derivative_batch_size = 100
     train_generator = SamplerGenerator(
         Generator1D(size=derivative_batch_size, t_min=t_min, t_max=t_max, method='equally-spaced-noisy'))
     model = BaseSolver(diff_eqs=ODESystem(),
