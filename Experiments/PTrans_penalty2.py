@@ -19,18 +19,16 @@ class ODESystem(nn.Module):
         self.k4 = nn.Parameter(torch.tensor(0.3))
         self.V = nn.Parameter(torch.tensor(0.017))
         self.Km = nn.Parameter(torch.tensor(0.3))
-        #self.S0 = nn.Parameter(torch.tensor(1.))
-        #self.Sd0 = nn.Parameter(torch.tensor(0.))
-        #self.R0 = nn.Parameter(torch.tensor(1.))
-        #self.SR0 = nn.Parameter(torch.tensor(0.))
-        #self.Rpp0 = nn.Parameter(torch.tensor(0.))
-        self.register_buffer("S0", torch.tensor(1.0))
-        self.register_buffer("Sd0", torch.tensor(0.0))
-        self.register_buffer("R0", torch.tensor(1.0))
-        self.register_buffer("SR0", torch.tensor(0.0))
-        self.register_buffer("Rpp0", torch.tensor(0.0))
-        
-        
+        self.S0 = nn.Parameter(torch.tensor(1.))
+        self.Sd0 = nn.Parameter(torch.tensor(0.))
+        self.R0 = nn.Parameter(torch.tensor(1.))
+        self.SR0 = nn.Parameter(torch.tensor(0.))
+        self.Rpp0 = nn.Parameter(torch.tensor(0.))
+        #self.register_buffer("S0", torch.tensor(1.0))
+        #self.register_buffer("Sd0", torch.tensor(0.0))
+        #self.register_buffer("R0", torch.tensor(1.0))
+        #self.register_buffer("SR0", torch.tensor(0.0))
+        #self.register_buffer("Rpp0", torch.tensor(0.0))
         self.initial_conditions = [self.S0, self.Sd0, self.R0, self.SR0, self.Rpp0]
 
     def compute_derivative(self, S, Sd, R, SR, Rpp, t):
