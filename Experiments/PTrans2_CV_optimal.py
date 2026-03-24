@@ -200,7 +200,9 @@ def main(args):
                             net4=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh),
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     
-    penalty_list = [0.0001, 0.0005, 0.001, 0.005,  0.01, 0.05, 0.1, 0.5,  1, 5] 
+    #penalty_list = [0.0001, 0.0005, 0.001, 0.005,  0.01, 0.05, 0.1, 0.5,  1, 5] 
+    penalty_list = [0.0001, 0.0003, 0.0005, 0.00075, 0.001, 0.003, 0.005, 0.0075,
+                     0.01, 0.03, 0.05, 0.075, 0.1, 0.3, 0.5, 0.75, 1.0, 3.0, 5.0, 7.5] 
     
     CV_error_list = []
     for j in range(len(penalty_list)):
