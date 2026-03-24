@@ -219,8 +219,7 @@ def main(args):
     penalty_CV = penalty_list[np.argmin(CV_error_list)]
     print(penalty_CV)
 
-    model.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # 12e-3
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     y_ind = np.arange(len(tvecObs))
     loss_history = []
     train_epochs = 15000
