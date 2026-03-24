@@ -201,7 +201,10 @@ def main(args):
                             net5=FCNN(n_input_units=1, n_output_units=1, actv=nn.Tanh))
     
     #penalty_list = [0.0001, 0.0005, 0.001, 0.005,  0.01, 0.05, 0.1, 0.5,  1, 5] 
-    penalty_list = [0.0001, 0.0003, 0.0005, 0.00075, 0.001, 0.003, 0.005, 0.0075,
+    if args.true_sigma == 1e-2:
+        penalty_list = [0.01, 0.03, 0.05, 0.075, 0.1, 0.3, 0.5, 0.75, 1.0, 3.0, 5.0, 7.5, 10.0, 30.0, 50.0, 75.0] 
+    else:
+        penalty_list = [0.0001, 0.0003, 0.0005, 0.00075, 0.001, 0.003, 0.005, 0.0075,
                      0.01, 0.03, 0.05, 0.075, 0.1, 0.3, 0.5, 0.75, 1.0, 3.0, 5.0, 7.5] 
     
     CV_error_list = []
@@ -321,9 +324,7 @@ def main(args):
     np.save(f"{output_dir}/results/l2_{s}.npy", l2)
     np.save(f"{output_dir}/results/derivative_loss_{s}.npy", float(dloss ** (1/2)))
     np.save(f"{output_dir}/results/lambda_{s}.npy", penalty_CV)
-    
     print(f"Simulation {s} saved completed")
-    
     
 
 def get_args():
