@@ -163,7 +163,7 @@ def PTrans_pretrain(penalty, extended_obs, t, model, train_generator, variable_b
 def PTrans_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, variable_batch_size = 10, train_epochs = 10000):
     model_copy = copy.deepcopy(model)
     best_model_copy = copy.deepcopy(model)
-    optimizer = torch.optim.Adam(model_copy.parameters(), lr=9e-3)
+    optimizer = torch.optim.Adam(model_copy.parameters(), lr=1e-4)
     y_ind = np.arange(len(train_idx))
     obs_train = obs[train_idx]
     obs_val = obs[val_idx]
@@ -202,12 +202,6 @@ def PTrans_CV(penalty, obs, t, model, train_generator, train_idx, val_idx, varia
     # check estimated path
     best_model_copy.eval()
     #param_results = np.array([best_model_copy.diff_eqs.a.data, best_model_copy.diff_eqs.b.data, best_model_copy.diff_eqs.c.data])
-
-    with torch.no_grad():
-        estimate_t = torch.linspace(0., 20., 41)
-        estimate_funcs = best_model_copy.diff_eqs.compute_func_val(best_model_copy.nets, [estimate_t.view(-1, 1)])
-        estimate_funcs = torch.cat(estimate_funcs, dim=1)
-    estimate_funcs = estimate_funcs.numpy()
 
     t_min = min(t)
     t_max = max(t)    

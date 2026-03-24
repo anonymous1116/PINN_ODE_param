@@ -208,7 +208,7 @@ def main(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)  # 12e-3
     y_ind = np.arange(len(tvecObs))
     loss_history = []
-    train_epochs = 10000
+    train_epochs = 20000
     
     for epoch in range(train_epochs):
         np.random.shuffle(y_ind)
