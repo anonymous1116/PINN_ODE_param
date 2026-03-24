@@ -307,7 +307,7 @@ def main(args):
     
     for train_idx, val_idx in kfold.split(ydata):
         print(f"penalty: {args.penalty}, CV: {num}/{k_folds}")
-        results = PTrans_CV(args.penalty, torch.from_numpy(ydata), t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 10, train_epochs = 10000) #10000
+        results = PTrans_CV(args.penalty, torch.from_numpy(ydata), t, model_pretrain, train_generator, train_idx, val_idx, variable_batch_size = 10, train_epochs = 15000) #10000
         num+=1
 
         CV_deri_error += results[1] 
